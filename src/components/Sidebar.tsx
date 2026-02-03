@@ -13,6 +13,8 @@ import {
   ChevronRight,
   ArrowLeft,
   Search,
+  Calendar,
+  Gift,
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -38,8 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const menuItems = [
     { icon: Home, label: 'Dashboard' },
-    { icon: Zap, label: 'Funcionalidades extras', highlight: true },
-    { icon: Star, label: 'Favoritos' },
+    { icon: Calendar, label: 'Calendário' },
     { 
       icon: Clock, 
       label: 'Controle de Ponto', 
@@ -61,8 +62,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       ]
     },
     { 
+      icon: Gift, 
+      label: 'Benefícios flexíveis', 
+      hasSubmenu: true
+    },
+    { 
       icon: Users, 
-      label: 'Departamento Pessoal', 
+      label: 'Departamento pessoal', 
       hasSubmenu: true,
       submenuItems: [
         'Admissão online 2.0',
@@ -114,6 +120,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         'Indique uma empresa',
       ]
     },
+    { icon: Users, label: 'Acesso gestor', hasSubmenu: true },
+    { icon: Settings, label: 'Comunicação interna', hasSubmenu: true },
   ]
 
   const toggleSubmenu = (label: string) => {
