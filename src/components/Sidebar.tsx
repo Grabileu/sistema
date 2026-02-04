@@ -42,15 +42,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
       hasSubmenu: true,
       submenuItems: [
         'Funcionários',
+        'Departamentos',
+        'Equipes',
+        'Turnos',
         'Gestores',
-        'Aniversariantes',
         'Demitidos',
+        'Aniversariantes',
       ]
     },
     { icon: Calendar, label: 'Calendário' },
     { 
       icon: Clock, 
-      label: 'Controle de Ponto', 
+      label: 'Controle de Jornada', 
       hasSubmenu: true,
       submenuItems: [
         'Sobreaviso',
@@ -65,7 +68,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
         'Espelho de ponto',
         'Permissões de ponto',
         'Exportar arquivos',
-        'Relatórios do controle de ponto',
+        'Relatórios do controle de jornada',
       ]
     },
     { 
@@ -88,11 +91,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
         'Dados da empresa',
         'Regras do ponto',
         'Unidades de negócio',
-        'Departamentos',
-        'Equipes',
         'Cargos',
-        'Turnos',
-        'Cadastro de turno',
         'Motivos de pausa - NR17',
         'Personalização',
       ]
@@ -129,6 +128,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
     if (label === 'Dashboard') {
       onClose()
       onNavigate('dashboard')
+    }
+    if (label === 'Férias e Afastamentos') {
+      onClose()
+      onNavigate('ferias-e-afastamentos')
     }
   }
 
@@ -217,7 +220,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
                 <button
                   key={subIndex}
                   onClick={() => {
-                    onNavigate(subItem)
+                    handleItemClick(subItem)
                     setOpenSubmenu(null)
                     onClose()
                   }}

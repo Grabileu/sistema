@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import Header from './components/Header'
+import LancamentoLicenca from './pages/LancamentoLicenca'
 import Navigation from './components/Navigation'
 import PromoCards from './components/PromoCards'
 import StatusCard from './components/StatusCard'
@@ -17,6 +18,7 @@ import PositionCreate from './pages/PositionCreate'
 import BusinessUnits from './pages/BusinessUnits'
 import Teams from './pages/Teams'
 import TeamCreate from './pages/TeamCreate'
+import FeriasEAfastamentos from './pages/FeriasEAfastamentos'
 import BusinessUnitCreate from './pages/BusinessUnitCreate'
 import Shifts from './pages/Shifts'
 import ShiftRegistration from './pages/ShiftRegistration'
@@ -197,6 +199,10 @@ function App() {
       setCurrentPage('dashboard')
       return
     }
+    if (route === 'lancamento-licenca') {
+      setCurrentPage('lancamento-licenca')
+      return
+    }
     if (route === 'Funcionários ativos' || route === 'Funcionários') {
       setCurrentPage('funcionarios-ativos')
       return
@@ -260,6 +266,10 @@ function App() {
     }
     if (route === 'cadastro-funcionario') {
       setCurrentPage('cadastro-funcionario')
+      return
+    }
+    if (route === 'ferias-e-afastamentos' || route === 'Férias e Afastamentos') {
+      setCurrentPage('ferias-e-afastamentos')
       return
     }
     setCurrentPage('dashboard')
@@ -412,6 +422,12 @@ function App() {
             onDeleteEmployee={handleDeleteEmployee}
             onEditEmployee={handleEditEmployee}
           />
+        )}
+        {currentPage === 'ferias-e-afastamentos' && (
+          <FeriasEAfastamentos onNovoLancamento={() => setCurrentPage('lancamento-licenca')} />
+        )}
+        {currentPage === 'lancamento-licenca' && (
+          <LancamentoLicenca />
         )}
         {currentPage === 'cadastro-funcionario' && (
           <EmployeeRegistration 
