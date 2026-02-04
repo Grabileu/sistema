@@ -1,15 +1,57 @@
-import React, { useState } from 'react'
-import { Search, ChevronDown, MoreVertical } from 'lucide-react'
+import React, { useState, useRef, useEffect } from 'react'
+import { Search, ChevronDown, MoreVertical, Edit2, Trash2 } from 'lucide-react'
+import { Employee } from '../App'
 
-const ActiveEmployees: React.FC = () => {
+interface ActiveEmployeesProps {
+  onNavigate?: (route: string) => void
+  employees: Employee[]
+  onDeleteEmployee?: (id: string) => void
+  onEditEmployee?: (id: string) => void
+}
+
+const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({ 
+  onNavigate, 
+  employees,
+  onDeleteEmployee,
+  onEditEmployee
+}) => {
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Fecha o menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleDelete = (id: string, nome: string) => {
+    if (confirm(`Tem certeza que deseja excluir o funcionário "${nome}"?`)) {
+      onDeleteEmployee?.(id)
+      setOpenMenuId(null)
+    }
+  }
+
+  const handleEdit = (id: string) => {
+    onEditEmployee?.(id)
+    setOpenMenuId(null)
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen">
       <div className="bg-white border-b">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <h1 className="text-xl font-semibold text-gray-900">Lista de funcionários ativos</h1>
-          <button className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-indigo-700">
+          <button 
+            onClick={() => onNavigate?.('cadastro-funcionario')}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-indigo-700"
+          >
             Cadastrar novo funcionário
           </button>
         </div>
@@ -179,9 +221,9 @@ const ActiveEmployees: React.FC = () => {
         {/* Tabela */}
         <div className="bg-white shadow rounded-lg p-6">
           <div className="flex items-center justify-end text-sm text-gray-500 mb-3">
-            Página 1/1 - Exibindo 2 de 2 registros.
+            Página 1/1 - Exibindo {employees.length} de {employees.length} registros.
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" style={{ overflow: 'visible' }}>
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="text-left text-gray-500 border-b">
@@ -197,44 +239,58 @@ const ActiveEmployees: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="text-gray-700">
-                <tr className="border-b">
-                  <td className="py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center font-semibold text-xs">AS</div>
-                      <div>
-                        <div className="text-indigo-600 font-semibold">#0 Administrador Super Machado</div>
-                        <div className="text-xs text-gray-500">Cargo Administrativo</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>---</td>
-                  <td>gabrielumbelino34@gmail.com</td>
-                  <td className="text-indigo-600">Equipe Administrativa</td>
-                  <td className="text-indigo-600">Turno Administrativo</td>
-                  <td className="text-indigo-600">Departamento Administrativo</td>
-                  <td>03/02/2026 17:36</td>
-                  <td>03/02/2026 17:36</td>
-                  <td className="text-right"><MoreVertical size={18} /></td>
-                </tr>
-                <tr>
-                  <td className="py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center font-semibold text-xs">SF</div>
-                      <div>
-                        <div className="text-indigo-600 font-semibold">#1 Sirilene Ferreira</div>
-                        <div className="text-xs text-gray-500">Cargo Administrativo</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>090.348.993-73</td>
-                  <td>admin@example.com</td>
-                  <td className="text-indigo-600">Equipe Administrativa</td>
-                  <td className="text-indigo-600">Turno Administrativo</td>
-                  <td className="text-indigo-600">Departamento Administrativo</td>
-                  <td>03/02/2026 14:24</td>
-                  <td>03/02/2026 14:24</td>
-                  <td className="text-right"><MoreVertical size={18} /></td>
-                </tr>
+                {employees.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="py-8 text-center text-gray-500">
+                      Nenhum funcionário cadastrado
+                    </td>
+                  </tr>
+                ) : (
+                  employees.map((employee) => (
+                    <tr key={employee.id} className="border-b hover:bg-gray-50">
+                      <td className="py-4">
+                        <div className="font-medium text-gray-900">{employee.nomeCompleto}</div>
+                        <div className="text-xs text-gray-500">Cargo: {employee.cargo || '-'}</div>
+                      </td>
+                      <td className="py-4">{employee.cpf}</td>
+                      <td className="py-4">{employee.email}</td>
+                      <td className="py-4">{employee.equipe || '-'}</td>
+                      <td className="py-4">{employee.turno || '-'}</td>
+                      <td className="py-4">-</td>
+                      <td className="py-4">{employee.ultimoAcesso}</td>
+                      <td className="py-4">{employee.ultimoRegistro}</td>
+                      <td className="py-4 text-right">
+                        <div className="relative inline-block" ref={openMenuId === employee.id ? menuRef : null}>
+                          <button 
+                            onClick={() => setOpenMenuId(openMenuId === employee.id ? null : employee.id)}
+                            className="p-2 hover:bg-gray-100 rounded"
+                          >
+                            <MoreVertical size={16} className="text-gray-400" />
+                          </button>
+                          {openMenuId === employee.id && (
+                            <div className="absolute right-0 mt-1 w-44 bg-white rounded-md shadow-xl border border-gray-200 py-1" 
+                                 style={{ zIndex: 9999 }}>
+                              <button
+                                onClick={() => handleEdit(employee.id)}
+                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                              >
+                                <Edit2 size={16} />
+                                Editar
+                              </button>
+                              <button
+                                onClick={() => handleDelete(employee.id, employee.nomeCompleto)}
+                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                              >
+                                <Trash2 size={16} />
+                                Excluir
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

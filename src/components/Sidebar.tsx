@@ -41,16 +41,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
       label: 'Departamento pessoal', 
       hasSubmenu: true,
       submenuItems: [
-        'Funcionários ativos',
+        'Funcionários',
+        'Gestores',
         'Aniversariantes',
         'Demitidos',
-        'Gerar crachá',
-        'Documentos',
-        'Documentos em massa',
-        'Assinatura eletrônica',
-        'Configurar assinatura eletrônica',
-        'Reembolsos',
-        'Comunicados',
       ]
     },
     { icon: Calendar, label: 'Calendário' },
@@ -98,6 +92,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
         'Equipes',
         'Cargos',
         'Turnos',
+        'Cadastro de turno',
         'Motivos de pausa - NR17',
         'Personalização',
       ]
