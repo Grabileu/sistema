@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CSSTransition, SwitchTransition } from 'react-transition-group';
 
 const licencas = [
   // Mais usados primeiro
@@ -122,9 +123,46 @@ function getIcon(nome) {
 }
 
 const LancamentoLicenca = () => {
-  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
-  const [showAll, setShowAll] = useState(false);
+      // Não limpar seleção ao abrir a tela, apenas ao clicar em "Voltar" da etapa 1
+      // React.useEffect removido para manter seleção ao voltar
+    // Função para voltar para tela inicial de Férias e Afastamentos
+    const handleVoltarFeriasEAfastamentos = () => {
+      // Limpa seleção e estado
+      localStorage.removeItem('licencaSelecionada');
+      localStorage.removeItem('licencaShowAll');
+      setSelectedIdx(null);
+      setShowAll(false);
+      setSearch("");
+      localStorage.setItem('currentPage', 'ferias-e-afastamentos');
+      window.dispatchEvent(new Event('storage'));
+    };
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(() => {
+    const saved = localStorage.getItem('licencaSelecionada');
+    if (saved) {
+      const idx = licencas.findIndex(l => l.nome === saved);
+      return idx !== -1 ? idx : null;
+    }
+    return null;
+  });
+  const [showAll, setShowAll] = useState(() => {
+    const savedShowAll = localStorage.getItem('licencaShowAll');
+    return savedShowAll === 'true';
+  });
   const [search, setSearch] = useState("");
+  const [etapa, setEtapa] = useState(1);
+
+  // Avançar etapa
+  const handleNext = () => {
+    // Salva a licença selecionada e o estado de mostrar mais no localStorage para persistir ao voltar
+    if (selectedIdx !== null) {
+      localStorage.setItem('licencaSelecionada', licencas[selectedIdx].nome);
+    }
+    localStorage.setItem('licencaShowAll', showAll ? 'true' : 'false');
+    localStorage.setItem('currentPage', 'lancamento-individual-ou-massa');
+    window.dispatchEvent(new Event('storage'));
+  };
+  // Voltar etapa (mantém para compatibilidade, mas só há etapa 1)
+  const handlePrev = () => {};
 
   return (
     <div className="bg-[#f6f7fb] min-h-screen p-6 flex flex-col justify-between">
@@ -139,14 +177,20 @@ const LancamentoLicenca = () => {
           <p className="text-gray-500 text-sm">Faça o lançamento coletivo ou individual dos seus colaboradores.</p>
         </div>
         <hr className="mb-6" />
-        {/* Etapas */}
-        <div className="flex items-center justify-center gap-8 mb-6">
-          {[1,2,3,4].map((etapa, idx) => (
-            <React.Fragment key={etapa}>
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-white ${etapa===1?'bg-blue-600':'bg-gray-300'}`}>{etapa}</div>
-              {etapa < 4 && <div className="w-32 h-1 bg-gray-200 rounded" />}
-            </React.Fragment>
-          ))}
+        {/* Etapas animadas */}
+        {/* Barra de etapas 1---2---3---4, apenas etapa 1 ativa */}
+        <div className="flex items-center justify-center w-full max-w-3xl mb-6 mx-auto">
+          {/* Etapa 1 ativa */}
+          <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold bg-blue-600 text-white scale-110 shadow-lg">1</div>
+          <div className="flex-1 h-0.5 bg-blue-100 mx-2" />
+          {/* Etapa 2 inativa */}
+          <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold bg-gray-300 text-gray-600">2</div>
+          <div className="flex-1 h-0.5 bg-gray-200 mx-2" />
+          {/* Etapa 3 inativa */}
+          <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold bg-gray-300 text-gray-600">3</div>
+          <div className="flex-1 h-0.5 bg-gray-200 mx-2" />
+          {/* Etapa 4 inativa */}
+          <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold bg-gray-300 text-gray-600">4</div>
         </div>
         {/* Campo de busca */}
         <div className="flex justify-center mb-8">
@@ -175,7 +219,10 @@ const LancamentoLicenca = () => {
               <div
                 key={item.nome}
                 className={`bg-white rounded-xl shadow flex flex-col items-center justify-center p-6 cursor-pointer transition border-2 ${selectedIdx === realIdx ? 'border-blue-400 bg-blue-50' : 'border-transparent hover:border-blue-300'}`}
-                onClick={() => setSelectedIdx(realIdx)}
+                onClick={() => {
+                  setSelectedIdx(realIdx);
+                  localStorage.setItem('licencaSelecionada', licencas[realIdx].nome);
+                }}
               >
                 {getIcon(item.nome)}
                 <span className="mt-3 text-gray-700 font-semibold text-center text-sm">{item.nome}</span>
@@ -185,20 +232,49 @@ const LancamentoLicenca = () => {
         </div>
         {/* Botões finais */}
         <div className="flex items-center justify-between mt-12 px-2">
-          <button className="text-blue-600 border border-blue-600 rounded-full px-6 py-2 font-semibold hover:bg-blue-50 transition">Cancelar</button>
+          <button className="text-blue-600 border border-blue-600 rounded-full px-6 py-2 font-semibold hover:bg-blue-50 transition" onClick={handleVoltarFeriasEAfastamentos}>Voltar</button>
           {showAll ? (
-            <button className="text-blue-600 text-sm font-semibold" onClick={() => { setShowAll(false); setSelectedIdx(null); }}>Ver menos</button>
+            <button className="text-blue-600 text-sm font-semibold" onClick={() => {
+              setShowAll(false);
+              localStorage.setItem('licencaShowAll', 'false');
+              setSelectedIdx(null);
+            }}>Ver menos</button>
           ) : (
-            <button className="text-blue-600 text-sm font-semibold" onClick={() => setShowAll(true)}>Mostrar mais</button>
+            <button className="text-blue-600 text-sm font-semibold" onClick={() => {
+              setShowAll(true);
+              localStorage.setItem('licencaShowAll', 'true');
+            }}>Mostrar mais</button>
           )}
           <button
             className={`rounded-full px-6 py-2 font-semibold shadow transition ${selectedIdx !== null ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-400 text-white hover:bg-gray-500 cursor-not-allowed'}`}
             disabled={selectedIdx === null}
+            onClick={handleNext}
           >
             Próximo passo
           </button>
         </div>
       </div>
+    {/* Estilos da transição de etapa */}
+    <style>{`
+      .fade-slide-enter {
+        opacity: 0;
+        transform: scale(0.8) translateY(20px);
+      }
+      .fade-slide-enter-active {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+        transition: opacity 400ms, transform 400ms;
+      }
+      .fade-slide-exit {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+      .fade-slide-exit-active {
+        opacity: 0;
+        transform: scale(0.8) translateY(-20px);
+        transition: opacity 400ms, transform 400ms;
+      }
+    `}</style>
     </div>
   );
 };

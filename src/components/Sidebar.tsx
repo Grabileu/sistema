@@ -43,6 +43,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
       submenuItems: [
         'Funcionários',
         'Departamentos',
+        'Cargos',
         'Equipes',
         'Turnos',
         'Gestores',
@@ -91,7 +92,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
         'Dados da empresa',
         'Regras do ponto',
         'Unidades de negócio',
-        'Cargos',
         'Motivos de pausa - NR17',
         'Personalização',
       ]
@@ -125,13 +125,24 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
   }
 
   const handleItemClick = (label: string) => {
-    if (label === 'Dashboard') {
-      onClose()
-      onNavigate('dashboard')
+    // Mapeamento dos submenus para rotas
+    const routeMap: { [key: string]: string } = {
+      'Dashboard': 'dashboard',
+      'Funcionários': 'Funcionários', // Para garantir que o App.tsx reconheça corretamente
+      'Departamentos': 'departamentos',
+      'Equipes': 'equipes',
+      'Turnos': 'turnos',
+      'Demitidos': 'demitidos',
+      'Aniversariantes': 'aniversariantes',
+      'Férias e Afastamentos': 'ferias-e-afastamentos',
+      'Dados da empresa': 'dados-empresa',
+      'Unidades de negócio': 'unidades-negocio',
+      'Cargos': 'cargos',
+      // Adicione outros submenus conforme necessário
     }
-    if (label === 'Férias e Afastamentos') {
+    if (routeMap[label]) {
       onClose()
-      onNavigate('ferias-e-afastamentos')
+      onNavigate(routeMap[label])
     }
   }
 

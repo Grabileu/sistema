@@ -58,7 +58,10 @@ const FeriasEAfastamentos = ({ onNovoLancamento }) => {
             <a href="#" className="text-blue-600 text-sm hover:underline">Como é calculado as férias?</a>
             <button
               className="bg-blue-600 text-white px-6 py-2 rounded-full font-semibold shadow hover:bg-blue-700 transition"
-              onClick={onNovoLancamento}
+              onClick={() => {
+                localStorage.setItem('currentPage', 'lancamento-licenca');
+                window.dispatchEvent(new Event('storage'));
+              }}
             >
               Fazer novo lançamento
             </button>

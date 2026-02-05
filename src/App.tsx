@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
+import { CSSTransition, SwitchTransition } from 'react-transition-group';
 import Header from './components/Header'
 import LancamentoLicenca from './pages/LancamentoLicenca'
+import LancamentoIndividualOuMassa from './pages/LancamentoIndividualOuMassa'
 import Navigation from './components/Navigation'
 import PromoCards from './components/PromoCards'
 import StatusCard from './components/StatusCard'
@@ -16,6 +18,7 @@ import CompanyData from './pages/CompanyData'
 import Positions from './pages/Positions'
 import PositionCreate from './pages/PositionCreate'
 import BusinessUnits from './pages/BusinessUnits'
+import LancamentoIndividual from './pages/LancamentoIndividual'
 import Teams from './pages/Teams'
 import TeamCreate from './pages/TeamCreate'
 import FeriasEAfastamentos from './pages/FeriasEAfastamentos'
@@ -194,12 +197,28 @@ function App() {
     localStorage.setItem('currentPage', currentPage)
   }, [currentPage])
 
+  // Atualiza a tela ao mudar currentPage via localStorage
+  useEffect(() => {
+    const onStorage = () => {
+      const newPage = localStorage.getItem('currentPage');
+      if (newPage && newPage !== currentPage) {
+        setCurrentPage(newPage);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [currentPage]);
+
   const handleNavigate = (route: string) => {
     if (route === 'dashboard') {
       setCurrentPage('dashboard')
       return
     }
     if (route === 'lancamento-licenca') {
+      // Resetar seleção e estado ao entrar na tela de novo lançamento
+      localStorage.removeItem('licencaSelecionada');
+      localStorage.removeItem('licencaShowAll');
+      localStorage.removeItem('tipoLancamento');
       setCurrentPage('lancamento-licenca')
       return
     }
@@ -423,12 +442,28 @@ function App() {
             onEditEmployee={handleEditEmployee}
           />
         )}
-        {currentPage === 'ferias-e-afastamentos' && (
-          <FeriasEAfastamentos onNovoLancamento={() => setCurrentPage('lancamento-licenca')} />
-        )}
-        {currentPage === 'lancamento-licenca' && (
-          <LancamentoLicenca />
-        )}
+        <SwitchTransition mode="out-in">
+          <CSSTransition
+            key={currentPage}
+            timeout={400}
+            classNames="fade-slide"
+          >
+            <div>
+              {currentPage === 'ferias-e-afastamentos' && (
+                <FeriasEAfastamentos onNovoLancamento={() => setCurrentPage('lancamento-licenca')} />
+              )}
+              {currentPage === 'lancamento-licenca' && (
+                <LancamentoLicenca />
+              )}
+              {currentPage === 'lancamento-individual-ou-massa' && (
+                <LancamentoIndividualOuMassa />
+              )}
+              {currentPage === 'lancamento-individual' && (
+                <LancamentoIndividual />
+              )}
+            </div>
+          </CSSTransition>
+        </SwitchTransition>
         {currentPage === 'cadastro-funcionario' && (
           <EmployeeRegistration 
             onNavigate={handleNavigate} 
@@ -522,6 +557,27 @@ function App() {
           />
         )}
       </div>
+    {/* Estilos da transição */}
+    <style>{`
+      .fade-slide-enter {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      .fade-slide-enter-active {
+        opacity: 1;
+        transform: translateY(0);
+        transition: opacity 400ms, transform 400ms;
+      }
+      .fade-slide-exit {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .fade-slide-exit-active {
+        opacity: 0;
+        transform: translateY(-30px);
+        transition: opacity 400ms, transform 400ms;
+      }
+    `}</style>
     </div>
   )
 }
