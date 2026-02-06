@@ -58,7 +58,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
       hasSubmenu: true,
       submenuItems: [
         'Sobreaviso',
-        'Férias e Afastamentos',
         'Planilha horário',
         'Histórico de ponto',
         'Lançamentos',
@@ -70,6 +69,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
         'Permissões de ponto',
         'Exportar arquivos',
         'Relatórios do controle de jornada',
+      ]
+    },
+    { 
+      icon: BarChart3, 
+      label: 'Lançamentos', 
+      hasSubmenu: true,
+      submenuItems: [
+        'Férias e Afastamentos',
+        'Faltas',
+        'Atrasos',
+        'Quebra de caixa',
+        'Ceasa',
+        'Configurações',
       ]
     },
     { 
@@ -113,11 +125,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
         'Indique uma empresa',
       ]
     },
-    { icon: Users, label: 'Acesso gestor', hasSubmenu: true,
-      submenuItems: [
-        'Minha equipe',
-      ]
-    },
+    // { icon: Users, label: 'Acesso gestor', hasSubmenu: true,
+    //   submenuItems: [
+    //     'Minha equipe',
+    //   ]
+    // },
   ]
 
   const toggleSubmenu = (label: string) => {
@@ -128,10 +140,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
     // Mapeamento dos submenus para rotas
     const routeMap: { [key: string]: string } = {
       'Dashboard': 'dashboard',
-      'Funcionários': 'Funcionários', // Para garantir que o App.tsx reconheça corretamente
+      'Funcionários': 'Funcionários',
       'Departamentos': 'departamentos',
       'Equipes': 'equipes',
       'Turnos': 'turnos',
+      'Gestores': 'equipes',
       'Demitidos': 'demitidos',
       'Aniversariantes': 'aniversariantes',
       'Férias e Afastamentos': 'ferias-e-afastamentos',
@@ -141,8 +154,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
       // Adicione outros submenus conforme necessário
     }
     if (routeMap[label]) {
-      onClose()
-      onNavigate(routeMap[label])
+      if (label === 'Gestores') {
+        localStorage.setItem('teamsActiveTab', 'gestores');
+      }
+      setOpenSubmenu(null);
+      onClose();
+      onNavigate(routeMap[label]);
     }
   }
 
@@ -153,7 +170,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
         className={`fixed inset-0 bg-black z-40 transition-opacity duration-500 ${
           isOpen ? 'opacity-50 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
-        onClick={onClose}
+        onClick={() => {
+          onClose();
+          setOpenSubmenu(null);
+        }}
       />
 
       {/* Sidebar com transição suave */}
@@ -210,12 +230,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
           </nav>
         </div>
 
-        {/* Footer com URL */}
-        <div className="absolute bottom-6 left-6 right-6">
-          <p className="text-xs text-gray-500 break-words">
-            https://app.marqponto.com.br/#
-          </p>
-        </div>
+        {/* Footer removido */}
       </aside>
 
       {/* Submenu lateral - renderizado fora do sidebar principal */}
