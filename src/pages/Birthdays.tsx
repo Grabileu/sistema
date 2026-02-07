@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { Search, Download } from 'lucide-react'
+import { Search, Download, Cake, Medal } from 'lucide-react'
 import { Employee } from '../App'
 import Select from '../components/Select'
 
@@ -65,7 +65,7 @@ const Birthdays: React.FC<BirthdaysProps> = ({ employees }) => {
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2 text-gray-900 font-semibold">
-                  <span className="text-lg">🎂</span>
+                  <Cake size={22} className="text-pink-400" />
                   <span>Aniversariantes do mês</span>
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
@@ -134,10 +134,20 @@ const Birthdays: React.FC<BirthdaysProps> = ({ employees }) => {
                     ) : (
                       monthlyBirthdays.map((employee) => (
                         <tr key={employee.id} className="border-b">
-                          <td className="py-4">{employee.dataNascimento.slice(0, 5)}</td>
+                          <td className="py-4">{(() => {
+                            const [dia, mes] = employee.dataNascimento.split('/');
+                            return `${dia}/${mes}`;
+                          })()}</td>
                           <td className="py-4">
-                            <div className="font-medium text-gray-900">{employee.nomeCompleto}</div>
-                            <div className="text-xs text-gray-500">{employee.cargo || '-'}</div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500">
+                                {employee.nomeCompleto.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="font-semibold text-indigo-700 hover:underline cursor-pointer"># {employee.nomeCompleto}</div>
+                                <div className="text-xs text-gray-500">{employee.cargo || '-'}</div>
+                              </div>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -152,7 +162,7 @@ const Birthdays: React.FC<BirthdaysProps> = ({ employees }) => {
           <div className="bg-white shadow rounded-lg p-6">
             <div>
               <div className="flex items-center gap-2 text-gray-900 font-semibold">
-                <span className="text-lg">🏅</span>
+                <Medal size={22} className="text-yellow-400" />
                 <span>Aniversariantes de trabalho</span>
               </div>
               <p className="text-sm text-gray-500 mt-1">
@@ -205,17 +215,31 @@ const Birthdays: React.FC<BirthdaysProps> = ({ employees }) => {
                   <tbody className="text-gray-700">
                     {workAnniversaries.length === 0 ? (
                       <tr>
-                        <td colSpan={2} className="py-6 text-center text-gray-500">
-                          Nenhum aniversariante encontrado
+                        <td colSpan={2} className="py-10 text-center text-gray-500">
+                          <div className="flex flex-col items-center justify-center">
+                            <img src="https://marq-assets.s3.sa-east-1.amazonaws.com/empty-state.svg" alt="Nenhum dado" className="w-40 mb-2 opacity-80" />
+                            <div className="font-bold text-lg text-gray-700 mb-1">Nenhum dado para visualização aqui</div>
+                            <div className="text-xs text-gray-500">Caso esteja realizando alguma pesquisa, verifique os dados preenchidos e tente novamente.</div>
+                          </div>
                         </td>
                       </tr>
                     ) : (
                       workAnniversaries.map((employee) => (
                         <tr key={employee.id} className="border-b">
-                          <td className="py-4">{employee.dataAdmissao.slice(0, 5)}</td>
+                          <td className="py-4">{(() => {
+                            const [dia, mes] = employee.dataAdmissao.split('/');
+                            return `${dia}/${mes}`;
+                          })()}</td>
                           <td className="py-4">
-                            <div className="font-medium text-gray-900">{employee.nomeCompleto}</div>
-                            <div className="text-xs text-gray-500">{employee.cargo || '-'}</div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500">
+                                {employee.nomeCompleto.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="font-semibold text-indigo-700 hover:underline cursor-pointer"># {employee.nomeCompleto}</div>
+                                <div className="text-xs text-gray-500">{employee.cargo || '-'}</div>
+                              </div>
+                            </div>
                           </td>
                         </tr>
                       ))

@@ -1,15 +1,18 @@
 import React from 'react'
+import { CSSTransition } from 'react-transition-group'
 import {
-  Home,
-  Clock,
-  Users,
-  Settings,
-  BarChart3,
+  LayoutDashboard,
+  UserCog,
+  CalendarDays,
+  ActivitySquare,
+  Briefcase,
+  Settings2,
+  BarChart4,
   ChevronRight,
   ArrowLeft,
   Search,
-  Calendar,
   Gift,
+  Cake,
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -20,6 +23,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
   const [openSubmenu, setOpenSubmenu] = React.useState<string | null>(null)
+  const [submenuTop, setSubmenuTop] = React.useState<number>(0)
 
   // Bloquear scroll quando o menu está aberto
   React.useEffect(() => {
@@ -35,9 +39,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
   }, [isOpen])
 
   const menuItems = [
-    { icon: Home, label: 'Dashboard' },
+    { icon: LayoutDashboard, label: 'Dashboard' },
     { 
-      icon: Users, 
+      icon: UserCog, 
       label: 'Departamento pessoal', 
       hasSubmenu: true,
       submenuItems: [
@@ -51,28 +55,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
         'Aniversariantes',
       ]
     },
-    { icon: Calendar, label: 'Calendário' },
+    { icon: CalendarDays, label: 'Calendário' },
     { 
-      icon: Clock, 
+      icon: ActivitySquare, 
       label: 'Controle de Jornada', 
       hasSubmenu: true,
       submenuItems: [
-        'Sobreaviso',
-        'Planilha horário',
-        'Histórico de ponto',
-        'Lançamentos',
-        'Escalas',
-        'Cercos eletrônicos',
-        'Reconhecimento facial',
-        'Fechamento de ponto',
         'Espelho de ponto',
-        'Permissões de ponto',
-        'Exportar arquivos',
-        'Relatórios do controle de jornada',
+        'Histórico de ponto',
+        'Folha de pagamento',
+        'Regras do ponto',
       ]
     },
     { 
-      icon: BarChart3, 
+      icon: BarChart4, 
       label: 'Lançamentos', 
       hasSubmenu: true,
       submenuItems: [
@@ -86,73 +82,82 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
     },
     { 
       icon: Gift, 
-      label: 'Benefícios flexíveis', 
+      label: 'Benefícios', 
       hasSubmenu: true,
       submenuItems: [
-        'Pedidos',
-        'Grupos de benefícios',
-        'Gerenciar cartões',
-        'Saldo/Extrato da empresa',
-        'Regras do benefícios',
+        'Benefícios',
+        'Adicionar Benefícios',
+        'Configurações',
       ]
     },
-    { 
-      icon: Settings, 
-      label: 'Parametrizações', 
-      hasSubmenu: true,
+    // { 
+    //   icon: Settings2, 
+    //   label: 'Parametrizações', 
+    //   hasSubmenu: true,
+    //   submenuItems: [
+    //     'Dados da empresa',
+    //     'Regras do ponto',
+    //     'Unidades de negócio',
+    //     'Motivos de pausa - NR17',
+    //     'Personalização',
+    //   ]
+    // },
+    { icon: BarChart4, label: 'Relatórios', hasSubmenu: true,
       submenuItems: [
-        'Dados da empresa',
-        'Regras do ponto',
-        'Unidades de negócio',
-        'Motivos de pausa - NR17',
-        'Personalização',
+        'Relatório geral',
+        'Faltas',
+        'Férias e Afastamentos',
+        'Quebra de caixa',
+        'Ceasa',
       ]
     },
-    { icon: BarChart3, label: 'Relatórios', hasSubmenu: true,
-      submenuItems: [
-        'People analytics',
-        'Central de relatórios',
-        'Relatórios de ponto',
-        'Configurar relatórios por e-mail',
-        'Resumo geral em Excel',
-      ]
-    },
-    { icon: Settings, label: 'Administrativo', hasSubmenu: true,
+    { icon: Briefcase, label: 'Administrativo', hasSubmenu: true,
       submenuItems: [
         'Administradores',
-        'Meu plano',
+        'Usuários',
         'Dados da empresa',
-        'Indique uma empresa',
+        'Unidades de negócio',
+        'Configurações',
       ]
     },
-    // { icon: Users, label: 'Acesso gestor', hasSubmenu: true,
+    // { icon: UserCog, label: 'Acesso gestor', hasSubmenu: true,
     //   submenuItems: [
     //     'Minha equipe',
     //   ]
     // },
   ]
 
-  const toggleSubmenu = (label: string) => {
-    setOpenSubmenu(openSubmenu === label ? null : label)
+  const toggleSubmenu = (label: string, event?: React.MouseEvent<HTMLButtonElement>) => {
+    if (openSubmenu === label) {
+      setOpenSubmenu(null)
+      return
+    }
+    setOpenSubmenu(label)
+    if (event) {
+      const rect = event.currentTarget.getBoundingClientRect()
+      setSubmenuTop(rect.top)
+    }
   }
 
   const handleItemClick = (label: string) => {
     // Mapeamento dos submenus para rotas
     const routeMap: { [key: string]: string } = {
-      'Dashboard': 'dashboard',
+      'Dashboard': 'Dashboard',
+      'Calendário': 'Calendário',
       'Funcionários': 'Funcionários',
       'Departamentos': 'departamentos',
       'Equipes': 'equipes',
       'Turnos': 'turnos',
       'Gestores': 'equipes',
-      'Demitidos': 'demitidos',
-      'Aniversariantes': 'aniversariantes',
+      'Demitidos': 'Demitidos',
+      'Aniversariantes': 'Aniversariantes',
       'Férias e Afastamentos': 'ferias-e-afastamentos',
-      'Dados da empresa': 'dados-empresa',
+      'Dados da empresa': 'Dados da empresa',
       'Unidades de negócio': 'unidades-negocio',
       'Cargos': 'cargos',
       // Adicione outros submenus conforme necessário
     }
+        console.log('Sidebar onNavigate:', label)
     if (routeMap[label]) {
       if (label === 'Gestores') {
         localStorage.setItem('teamsActiveTab', 'gestores');
@@ -207,11 +212,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
             {menuItems.map((item, index) => {
               const Icon = item.icon
               const isSubmenuOpen = openSubmenu === item.label
-              
               return (
                 <div key={index} className="relative">
                   <button
-                    onClick={() => item.hasSubmenu ? toggleSubmenu(item.label) : handleItemClick(item.label)}
+                    onClick={event => item.hasSubmenu ? toggleSubmenu(item.label, event) : handleItemClick(item.label)}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition duration-200 ${
                       isSubmenuOpen
                         ? 'bg-[#3b4cca] text-white'
@@ -234,14 +238,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
       </aside>
 
       {/* Submenu lateral - renderizado fora do sidebar principal */}
-      {openSubmenu && menuItems.find(item => item.label === openSubmenu)?.submenuItems && (
-        <aside className={`fixed left-[336px] top-0 h-screen w-72 bg-[#1e1e2e] text-white overflow-y-auto hide-scrollbar z-50 shadow-2xl transition-all duration-500 ${
-          isOpen ? '' : '-translate-x-full'
-        }`}>
+      <CSSTransition
+        in={!!openSubmenu && !!menuItems.find(item => item.label === openSubmenu)?.submenuItems}
+        timeout={300}
+        classNames="submenu-slide"
+        unmountOnExit
+      >
+        <aside
+          className="fixed left-80 w-72 bg-[#1e1e2e] text-white z-50 shadow-2xl rounded-2xl border border-gray-700 transition-all duration-300 max-h-screen overflow-auto"
+          style={{ top: Math.min((submenuTop || 80) - 40, window.innerHeight - 24 - 320) }}
+        >
           <div className="p-6">
-            <h3 className="mb-3 text-base font-bold text-white">{openSubmenu}</h3>
+            <h3 className="mb-3 text-lg font-bold text-white tracking-wide">{openSubmenu}</h3>
             <div className="mb-4 border-b border-gray-700"></div>
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {menuItems.find(item => item.label === openSubmenu)?.submenuItems?.map((subItem, subIndex) => (
                 <button
                   key={subIndex}
@@ -250,7 +260,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
                     setOpenSubmenu(null)
                     onClose()
                   }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-[#2a2a3e] rounded transition"
+                  className="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-[#2a2a3e] hover:text-white rounded transition flex items-center gap-2 font-medium"
                 >
                   {subItem}
                 </button>
@@ -258,7 +268,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
             </div>
           </div>
         </aside>
-      )}
+      </CSSTransition>
     </>
   )
 }

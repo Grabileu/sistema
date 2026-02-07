@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { CSSTransition, SwitchTransition } from 'react-transition-group';
 import Header from './components/Header'
+import Calendar from './pages/Calendar'
 import LancamentoLicenca from './pages/LancamentoLicenca'
 import LancamentoIndividualOuMassa from './pages/LancamentoIndividualOuMassa'
 import Navigation from './components/Navigation'
@@ -101,9 +102,7 @@ export interface Team {
 function App() {
   const [activeTab, setActiveTab] = useState('controle')
   const [menuOpen, setMenuOpen] = useState(false)
-  const [currentPage, setCurrentPage] = useState<string>(() => {
-    return localStorage.getItem('currentPage') || 'dashboard';
-  });
+  const [currentPage, setCurrentPage] = useState<string>('dashboard');
   const [employees, setEmployees] = useState<Employee[]>(() => {
     const storedEmployees = localStorage.getItem('employees')
     if (storedEmployees) {
@@ -195,6 +194,7 @@ function App() {
 
   useEffect(() => {
     localStorage.setItem('currentPage', currentPage)
+    console.log('App currentPage:', currentPage)
   }, [currentPage])
 
   // Atualiza a tela ao mudar currentPage via localStorage
@@ -210,6 +210,11 @@ function App() {
   }, [currentPage]);
 
   const handleNavigate = (route: string) => {
+    console.log('App handleNavigate:', route)
+    if (route === 'Calendário') {
+      setCurrentPage('calendario')
+      return
+    }
     if (route === 'dashboard') {
       setCurrentPage('dashboard')
       return
@@ -463,7 +468,10 @@ function App() {
               )}
             </div>
           </CSSTransition>
-        </SwitchTransition>
+                </SwitchTransition>
+                {currentPage === 'calendario' && (
+                  <Calendar />
+                )}
         {currentPage === 'cadastro-funcionario' && (
           <EmployeeRegistration 
             onNavigate={handleNavigate} 
