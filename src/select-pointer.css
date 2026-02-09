@@ -1,0 +1,4 @@
+/* Garante cursor pointer nas opções do select */
+select option {
+  cursor: pointer;
+}

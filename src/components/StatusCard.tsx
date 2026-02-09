@@ -29,9 +29,7 @@ const StatusCard: React.FC = () => {
         <p className="text-sm text-gray-500 mt-2">0% de presença</p>
       </div>
 
-      <button className="p-2 hover:bg-gray-100 rounded-lg transition absolute top-8 right-8">
-        <Eye size={24} className="text-gray-600" />
-      </button>
+      {/* Botão de olho removido */}
     </div>
   )
 }

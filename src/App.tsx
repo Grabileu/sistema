@@ -1,3 +1,4 @@
+// ...existing code...
 import React, { useEffect, useState } from 'react'
 import { CSSTransition, SwitchTransition } from 'react-transition-group';
 import Header from './components/Header'
@@ -26,6 +27,8 @@ import FeriasEAfastamentos from './pages/FeriasEAfastamentos'
 import BusinessUnitCreate from './pages/BusinessUnitCreate'
 import Shifts from './pages/Shifts'
 import ShiftRegistration from './pages/ShiftRegistration'
+
+import TeamView from './pages/TeamView';
 
 export interface Employee {
   id: string;
@@ -100,7 +103,13 @@ export interface Team {
 }
 
 function App() {
+    const [viewingTeamId, setViewingTeamId] = useState<string | null>(null);
+    const handleViewTeam = (id: string) => {
+      setViewingTeamId(id);
+      setCurrentPage('visualizar-equipe');
+    };
   const [activeTab, setActiveTab] = useState('controle')
+  const [editingShiftCode, setEditingShiftCode] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState<string>('dashboard');
   const [employees, setEmployees] = useState<Employee[]>(() => {
@@ -211,6 +220,12 @@ function App() {
 
   const handleNavigate = (route: string) => {
     console.log('App handleNavigate:', route)
+    if (route.startsWith('editar-turno-')) {
+      const codigo = route.replace('editar-turno-', '');
+      setEditingShiftCode(codigo);
+      setCurrentPage('editar-turno');
+      return;
+    }
     if (route === 'Calendário') {
       setCurrentPage('calendario')
       return
@@ -400,10 +415,7 @@ function App() {
     setTeams((prevTeams) => prevTeams.filter(t => t.id !== id))
   }
 
-  const handleViewTeam = (id: string) => {
-    setEditingTeamId(id)
-    setCurrentPage('cadastro-equipe')
-  }
+  // ...existing code...
 
   const handleEditTeam = (id: string) => {
     setEditingTeamId(id)
@@ -492,7 +504,16 @@ function App() {
             onViewTeam={handleViewTeam}
             onEditTeam={handleEditTeam}
             onDeleteTeam={handleDeleteTeam}
-            initialTab={localStorage.getItem('teamsActiveTab') || undefined}
+            initialTab={(() => {
+              const tab = localStorage.getItem('teamsActiveTab');
+              return tab === 'gestores' || tab === 'gerenciar' ? tab : undefined;
+            })()}
+          />
+        )}
+        {currentPage === 'visualizar-equipe' && viewingTeamId && (
+          <TeamView
+            team={teams.find(t => t.id === viewingTeamId)}
+            employees={employees}
           />
         )}
         {currentPage === 'cadastro-departamento' && (
@@ -544,6 +565,12 @@ function App() {
         )}
         {currentPage === 'cadastro-turno' && (
           <ShiftRegistration onNavigate={handleNavigate} />
+        )}
+        {currentPage === 'editar-turno' && (
+          <ShiftRegistration
+            onNavigate={handleNavigate}
+            editingShift={editingShiftCode ? (JSON.parse(localStorage.getItem('turnos') || '[]').find((t:any) => t.codigo === editingShiftCode) || null) : null}
+          />
         )}
         {currentPage === 'resumo-turno' && (
           <div className="bg-white rounded-lg shadow p-8 max-w-6xl mx-auto mt-8 text-center">

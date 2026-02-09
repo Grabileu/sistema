@@ -15,9 +15,39 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
   onDeleteEmployee,
   onEditEmployee
 }) => {
-  const [showAdvanced, setShowAdvanced] = useState(false)
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
+    const [showAdvanced, setShowAdvanced] = useState(false)
+    const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+    const menuRef = useRef<HTMLDivElement>(null)
+
+    // Carregar equipes e departamentos do localStorage
+    const [teams, setTeams] = useState(() => {
+      const teamsStr = localStorage.getItem('teams');
+      if (teamsStr) {
+        try {
+          return JSON.parse(teamsStr);
+        } catch {}
+      }
+      return [];
+    });
+    const [departments, setDepartments] = useState(() => {
+      const departmentsStr = localStorage.getItem('departments');
+      if (departmentsStr) {
+        try {
+          return JSON.parse(departmentsStr);
+        } catch {}
+      }
+      return [];
+    });
+
+    // Função para buscar o nome do departamento pela equipe
+    const getDepartmentName = (teamName: string) => {
+      const team = teams.find((t: any) => t.nome === teamName);
+      if (team && team.departamentoId) {
+        const dept = departments.find((d: any) => d.id === team.departamentoId);
+        return dept ? dept.nome : '-';
+      }
+      return '-';
+    };
 
   // Fecha o menu ao clicar fora
   useEffect(() => {
@@ -256,7 +286,7 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
                       <td className="py-4">{employee.email}</td>
                       <td className="py-4">{employee.equipe || '-'}</td>
                       <td className="py-4">{employee.turno || '-'}</td>
-                      <td className="py-4">-</td>
+                      <td className="py-4">{getDepartmentName(employee.equipe)}</td>
                       <td className="py-4">{employee.ultimoAcesso}</td>
                       <td className="py-4">{employee.ultimoRegistro}</td>
                       <td className="py-4 text-right">

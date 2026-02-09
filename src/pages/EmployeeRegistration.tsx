@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 import { formatCPF, formatDate, formatDateTime } from '../utils/formatters';
+import { formatPIS } from '../utils/formatters';
 import { Employee, Position, Team, BusinessUnit } from '../App';
 import Select from '../components/Select';
 import DatePicker from '../components/DatePicker';
@@ -40,7 +41,7 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
     dataNascimento: '',
     isCLT: '',
     pis: '',
-    dataAdmissao: '03/02/2026',
+    dataAdmissao: '',
     equipe: '',
     cargo: '',
     turno: '',
@@ -55,6 +56,25 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
   const [teamOptions, setTeamOptions] = useState<{ label: string; value: string }[]>([
     { label: 'Selecione', value: '' }
   ]);
+
+  const [turnoOptions, setTurnoOptions] = useState<{ label: string; value: string }[]>([
+    { label: 'Selecione', value: '' }
+  ]);
+  // Carregar turnos cadastrados
+  useEffect(() => {
+    const storedTurnos = localStorage.getItem('turnos');
+    if (storedTurnos) {
+      try {
+        const turnos = JSON.parse(storedTurnos);
+        setTurnoOptions([
+          { label: 'Selecione', value: '' },
+          ...turnos.map((t) => ({ label: t.nome, value: t.nome }))
+        ]);
+      } catch {
+        localStorage.removeItem('turnos');
+      }
+    }
+  }, []);
 
   // Carregar dados do funcionário em edição
   useEffect(() => {
@@ -115,20 +135,30 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
     genero: false,
     dataNascimento: false,
     isCLT: false,
-    unidadeNegocio: false
+    unidadeNegocio: false,
+    dataAdmissao: false,
+    equipe: false,
+    cargo: false,
+    turno: false,
+    criarDiasApartirDe: false
   });
 
   const handleNext = () => {
     if (currentStep === 1) {
       // Validação dos campos obrigatórios da etapa 1
+      let emailError = false;
+      if (!formData.email) {
+        emailError = 'required';
+      } else if (!formData.email.includes('@')) {
+        emailError = 'invalid';
+      }
       const newErrors = {
         nomeCompleto: !formData.nomeCompleto,
-        email: !formData.email,
+        email: emailError,
         cpf: !formData.cpf,
         genero: !formData.genero,
         dataNascimento: !formData.dataNascimento,
-        isCLT: !formData.isCLT,
-        unidadeNegocio: !formData.unidadeNegocio
+        isCLT: !formData.isCLT
       };
       setErrors(newErrors);
       if (Object.values(newErrors).some(error => error)) {
@@ -142,9 +172,20 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
   };
 
   const handleFinish = () => {
+    // Validação dos campos obrigatórios da etapa 2
+    const finishErrors = {
+      dataAdmissao: !formData.dataAdmissao,
+      equipe: !formData.equipe,
+      cargo: !formData.cargo,
+      turno: !formData.turno,
+      criarDiasApartirDe: !formData.criarDiasApartirDe
+    };
+    if (Object.values(finishErrors).some(error => error)) {
+      setErrors((prev) => ({ ...prev, ...finishErrors }));
+      return;
+    }
     const now = new Date();
     const dateTime = formatDateTime(now);
-    
     if (editingEmployee && onUpdateEmployee) {
       // Atualizar funcionário existente
       const updatedEmployee: Employee = {
@@ -300,7 +341,8 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                     onKeyDown={(e) => handleKeyDown(e, cpfRef)}
                     className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
                   />
-                  {errors.email && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
+                  {errors.email === 'required' && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
+                  {errors.email === 'invalid' && <p className="text-red-500 text-xs mt-1">O e-mail precisa ser válido</p>}
                 </div>
 
                 {/* CPF */}
@@ -319,42 +361,6 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                     className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
                   />
                   {errors.cpf && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
-                </div>
-                {/* Unidade de Negócio */}
-                <div>
-                  <label className="block text-gray-700 text-sm mb-2">
-                    Unidade de negócio <span className="text-red-500">*</span>
-                  </label>
-                  <Select
-                    value={formData.unidadeNegocio}
-                    onChange={(value) => {
-                      setFormData({ ...formData, unidadeNegocio: String(value) })
-                      setErrors({ ...errors, unidadeNegocio: false })
-                    }}
-                    options={(() => {
-                      const principalUnits = businessUnits.filter(u => u.unidadePrincipal);
-                      const otherUnits = businessUnits.filter(u => !u.unidadePrincipal);
-                      let options = [
-                        { label: 'Selecione', value: '' },
-                        ...principalUnits.map(u => ({ label: u.nomeUnidade, value: u.id })),
-                        ...otherUnits.map(u => ({ label: u.nomeUnidade, value: u.id }))
-                      ];
-                      // Se não houver unidade principal, tentar pegar dados da empresa
-                      if (principalUnits.length === 0 && window.localStorage.getItem('companyData')) {
-                        try {
-                          const companyData = JSON.parse(window.localStorage.getItem('companyData') || '{}');
-                          if (companyData && (companyData.nomeEmpresa || companyData.razaoSocial)) {
-                            options.splice(1, 0, {
-                              label: companyData.nomeEmpresa || companyData.razaoSocial || 'Empresa',
-                              value: 'company-main'
-                            });
-                          }
-                        } catch {}
-                      }
-                      return options;
-                    })()}
-                  />
-                  {errors.unidadeNegocio && <p className="text-red-500 text-xs mt-1">Selecione uma unidade de negócio</p>}
                 </div>
 
                 {/* Gênero */}
@@ -422,8 +428,14 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                     <input
                       type="text"
                       value={formData.pis}
-                      onChange={(e) => setFormData({ ...formData, pis: e.target.value })}
+                      onChange={(e) => {
+                        // Permite digitação livre, aplica formatação apenas a números
+                        const value = e.target.value;
+                        const formatted = formatPIS(value);
+                        setFormData({ ...formData, pis: formatted });
+                      }}
                       placeholder="Digite"
+                      maxLength={15}
                       className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900"
                     />
                   </div>
@@ -465,6 +477,7 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                     placeholder="DD/MM/AAAA"
                     className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900"
                   />
+                  {errors.dataAdmissao && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
                 </div>
 
                 {/* Equipe */}
@@ -486,6 +499,7 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                     onChange={(value) => setFormData({...formData, equipe: String(value)})}
                     options={teamOptions}
                   />
+                  {errors.equipe && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
                 </div>
 
                 {/* Cargo */}
@@ -507,6 +521,7 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                     onChange={(value) => setFormData({...formData, cargo: String(value)})}
                     options={cargoOptions}
                   />
+                  {errors.cargo && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
                 </div>
 
                 {/* Turno */}
@@ -515,13 +530,20 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                     <label className="block text-gray-700 text-sm">
                       Turno <span className="text-red-500">*</span>
                     </label>
-                    <button className="text-indigo-600 text-xs font-semibold hover:underline">Cadastrar</button>
+                    <button
+                      type="button"
+                      onClick={() => onNavigate?.('cadastro-turno')}
+                      className="text-indigo-600 text-xs font-semibold hover:underline"
+                    >
+                      Cadastrar
+                    </button>
                   </div>
                   <Select
                     value={formData.turno}
                     onChange={(value) => setFormData({...formData, turno: String(value)})}
-                    options={[{ label: 'Selecione', value: '' }]}
+                    options={turnoOptions}
                   />
+                  {errors.turno && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
                 </div>
 
                 {/* Criar dias no sistema a partir de */}
@@ -546,6 +568,7 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                     className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900"
                     disabled={!!editingEmployee}
                   />
+                  {errors.criarDiasApartirDe && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
                 </div>
               </div>
 

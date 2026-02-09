@@ -1,3 +1,15 @@
+// Formata PIS/PASEP: 000.00000.00-0
+export const formatPIS = (value: string): string => {
+  let numbers = value.replace(/\D/g, '');
+  if (numbers.length > 3 && numbers.length <= 8) {
+    numbers = numbers.slice(0, 3) + '.' + numbers.slice(3);
+  } else if (numbers.length > 8 && numbers.length <= 10) {
+    numbers = numbers.slice(0, 3) + '.' + numbers.slice(3, 8) + '.' + numbers.slice(8);
+  } else if (numbers.length > 10) {
+    numbers = numbers.slice(0, 3) + '.' + numbers.slice(3, 8) + '.' + numbers.slice(8, 10) + '-' + numbers.slice(10, 11);
+  }
+  return numbers;
+};
 // Funções de formatação para uso em todo o site
 
 export const formatCPF = (value: string): string => {
