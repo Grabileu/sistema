@@ -3,6 +3,7 @@ import { CSSTransition, SwitchTransition } from 'react-transition-group';
 import '../pages/shiftRegistrationAnimations.css';
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import '../select-pointer.css';
+import Select from '../components/Select';
 
 
 interface ShiftRegistrationProps {
@@ -58,8 +59,9 @@ const ShiftRegistration: React.FC<ShiftRegistrationProps> = ({ onNavigate, editi
     } else {
       // Gera código automático ao abrir tela
       const turnos = JSON.parse(localStorage.getItem('turnos') || '[]');
-      const nextCode = (turnos.length + 1).toString().padStart(2, '0');
-      setCode(nextCode);
+      const codes = turnos.map((t: any) => parseInt(t.codigo) || 0);
+      const maxCode = codes.length > 0 ? Math.max(...codes) : 0;
+      setCode((maxCode + 1).toString().padStart(2, '0'));
     }
   }, [editingShift]);
 
@@ -82,9 +84,20 @@ const ShiftRegistration: React.FC<ShiftRegistrationProps> = ({ onNavigate, editi
       alert('Preencha todos os campos obrigatórios.');
       return;
     }
-    // Se for Sem HR Fixa ou Livre/Folguista, já vai para Resumo
+    // Se for Sem HR Fixa ou Livre/Folguista, salva e navega
     if ((type === 'Sem HR Fixa' || type === 'Livre/Folguista') && onNavigate) {
-      onNavigate('resumo-turno');
+      const turnos = JSON.parse(localStorage.getItem('turnos') || '[]');
+      turnos.push({
+        codigo: code,
+        nome: name,
+        tipo: type,
+        criadoEm: new Date().toLocaleDateString('pt-BR'),
+        regras: followCompanyRules ? 'Segue' : 'Não segue',
+        observacao: observation,
+        ignoreHolidays,
+      });
+      localStorage.setItem('turnos', JSON.stringify(turnos));
+      onNavigate('turnos');
       return;
     }
     // Se for Semanal, vai para etapa 2
@@ -174,18 +187,14 @@ const ShiftRegistration: React.FC<ShiftRegistrationProps> = ({ onNavigate, editi
           <div className="grid grid-cols-3 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium mb-1">
-                Tipo do turno <span className="text-red-500">*</span>
+                Código do turno <span className="text-red-500">*</span>
               </label>
-              <select
-                className="w-full px-4 py-2 rounded border border-gray-200 bg-gray-50 text-sm"
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-              >
-                <option value="">Selecione</option>
-                <option value="Semanal">Semanal (Mais usado)</option>
-                <option value="Sem HR Fixa">Sem HR Fixa</option>
-                <option value="Livre/Folguista">Livre / Folguista</option>
-              </select>
+              <input
+                className="w-full px-4 py-2 rounded border border-gray-200 bg-gray-50 text-sm cursor-not-allowed"
+                placeholder="Código gerado automaticamente"
+                value={code}
+                readOnly
+              />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">
@@ -200,13 +209,17 @@ const ShiftRegistration: React.FC<ShiftRegistrationProps> = ({ onNavigate, editi
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">
-                Código do turno <span className="text-red-500">*</span>
+                Tipo do turno <span className="text-red-500">*</span>
               </label>
-              <input
-                className="w-full px-4 py-2 rounded border border-gray-200 bg-gray-50 text-sm"
-                placeholder="Código gerado automaticamente"
-                value={code}
-                readOnly
+              <Select
+                value={type}
+                onChange={(value) => setType(String(value))}
+                options={[
+                  { label: 'Selecione', value: '' },
+                  { label: 'Semanal (Mais usado)', value: 'Semanal' },
+                  { label: 'Sem HR Fixa', value: 'Sem HR Fixa' },
+                  { label: 'Livre/Folguista', value: 'Livre/Folguista' }
+                ]}
               />
             </div>
             <div>
@@ -214,14 +227,14 @@ const ShiftRegistration: React.FC<ShiftRegistrationProps> = ({ onNavigate, editi
                 Ignorar feriados? <span className="text-red-500">*</span>
                 <InformationCircleIcon className="w-4 h-4 text-gray-400 ml-1" title="O sistema irá ignorar os feriados e irá tratar os feriados como dia de trabalho normal." />
               </label>
-              <select
-                className="w-full px-4 py-2 rounded border border-gray-200 bg-gray-50 text-sm"
+              <Select
                 value={ignoreHolidays}
-                onChange={(e) => setIgnoreHolidays(e.target.value)}
-              >
-                <option>Não</option>
-                <option>Sim</option>
-              </select>
+                onChange={(value) => setIgnoreHolidays(String(value))}
+                options={[
+                  { label: 'Não', value: 'Não' },
+                  { label: 'Sim', value: 'Sim' }
+                ]}
+              />
             </div>
           </div>
           <div className="mb-4">
@@ -304,12 +317,16 @@ const ShiftRegistration: React.FC<ShiftRegistrationProps> = ({ onNavigate, editi
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Dias</label>
-              <select className="w-full px-4 py-2 rounded bg-gray-100 text-gray-700 cursor-pointer">
-                <option>Dias úteis</option>
-                <option>Seg - Sab</option>
-                <option>Fim de semana</option>
-                <option>Todos os dias</option>
-              </select>
+              <Select
+                value="Dias úteis"
+                onChange={() => {}}
+                options={[
+                  { label: 'Dias úteis', value: 'Dias úteis' },
+                  { label: 'Seg - Sab', value: 'Seg - Sab' },
+                  { label: 'Fim de semana', value: 'Fim de semana' },
+                  { label: 'Todos os dias', value: 'Todos os dias' }
+                ]}
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4 mb-4">

@@ -152,6 +152,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
       'Demitidos': 'Demitidos',
       'Aniversariantes': 'Aniversariantes',
       'Férias e Afastamentos': 'ferias-e-afastamentos',
+      'Faltas': 'faltas',
       'Dados da empresa': 'Dados da empresa',
       'Unidades de negócio': 'unidades-negocio',
       'Cargos': 'cargos',

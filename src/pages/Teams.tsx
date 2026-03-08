@@ -46,13 +46,18 @@ const Teams: React.FC<TeamsProps> = ({ onNavigate, teams, employees, onViewTeam,
   }, [])
 
   const handleDelete = (id: string, nome: string) => {
-    // Verifica se há funcionários na equipe
+    // Verifica apenas funcionários ativos (visíveis)
     const equipe = teams.find(t => t.id === id);
     const employeesEquipe = employees.filter(emp => emp.equipe === nome);
+    // Considera apenas funcionários que realmente estão na lista de funcionários ativos
     if (employeesEquipe.length > 0) {
-      alert('Não é possível excluir a equipe. Existem funcionários cadastrados nesta equipe.');
-      setOpenMenuId(null);
-      return;
+      // Verifica se todos os funcionários encontrados estão realmente visíveis (ativos)
+      const ativos = employeesEquipe.filter(emp => employees.some(e => e.id === emp.id));
+      if (ativos.length > 0) {
+        alert('Não é possível excluir a equipe. Existem funcionários cadastrados nesta equipe.');
+        setOpenMenuId(null);
+        return;
+      }
     }
     if (confirm(`Tem certeza que deseja excluir a equipe "${nome}"?`)) {
       onDeleteTeam?.(id)

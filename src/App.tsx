@@ -29,6 +29,8 @@ import Shifts from './pages/Shifts'
 import ShiftRegistration from './pages/ShiftRegistration'
 
 import TeamView from './pages/TeamView';
+import Faltas from './pages/Faltas';
+import AdicionarFalta from './pages/AdicionarFalta';
 
 export interface Employee {
   id: string;
@@ -97,8 +99,18 @@ export interface Team {
   departamentoNome: string;
   observacao?: string;
   employeeIds: string[];
+  gestorIds?: string[];
   totalFuncionarios: number;
   totalGestores: number;
+  criadoEm: string;
+}
+
+export interface Falta {
+  id: string;
+  funcionarioId: string;
+  funcionarioNome: string;
+  data: string;
+  motivo: string;
   criadoEm: string;
 }
 
@@ -111,7 +123,10 @@ function App() {
   const [activeTab, setActiveTab] = useState('controle')
   const [editingShiftCode, setEditingShiftCode] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false)
-  const [currentPage, setCurrentPage] = useState<string>('dashboard');
+  const [currentPage, setCurrentPage] = useState<string>(() => {
+    const storedPage = localStorage.getItem('currentPage');
+    return storedPage || 'dashboard';
+  });
   const [employees, setEmployees] = useState<Employee[]>(() => {
     const storedEmployees = localStorage.getItem('employees')
     if (storedEmployees) {
@@ -138,6 +153,7 @@ function App() {
 
   const [editingPositionId, setEditingPositionId] = useState<string | null>(null)
   const [editingEmployeeId, setEditingEmployeeId] = useState<string | null>(null)
+  const [editingFaltaId, setEditingFaltaId] = useState<string | null>(null)
 
   const [businessUnits, setBusinessUnits] = useState<BusinessUnit[]>(() => {
     const storedUnits = localStorage.getItem('businessUnits')
@@ -177,6 +193,18 @@ function App() {
     return []
   })
 
+  const [faltas, setFaltas] = useState<Falta[]>(() => {
+    const storedFaltas = localStorage.getItem('faltas')
+    if (storedFaltas) {
+      try {
+        return JSON.parse(storedFaltas) as Falta[]
+      } catch {
+        localStorage.removeItem('faltas')
+      }
+    }
+    return []
+  })
+
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null)
 
   const [editingDepartmentId, setEditingDepartmentId] = useState<string | null>(null)
@@ -202,6 +230,10 @@ function App() {
   }, [teams])
 
   useEffect(() => {
+    localStorage.setItem('faltas', JSON.stringify(faltas))
+  }, [faltas])
+
+  useEffect(() => {
     localStorage.setItem('currentPage', currentPage)
     console.log('App currentPage:', currentPage)
   }, [currentPage])
@@ -219,6 +251,10 @@ function App() {
   }, [currentPage]);
 
   const handleNavigate = (route: string) => {
+        if (route === 'resumo-turno') {
+          setCurrentPage('resumo-turno');
+          return;
+        }
     console.log('App handleNavigate:', route)
     if (route.startsWith('editar-turno-')) {
       const codigo = route.replace('editar-turno-', '');
@@ -309,6 +345,20 @@ function App() {
     }
     if (route === 'ferias-e-afastamentos' || route === 'Férias e Afastamentos') {
       setCurrentPage('ferias-e-afastamentos')
+      return
+    }
+    if (route === 'Faltas' || route === 'faltas') {
+      setCurrentPage('faltas')
+      return
+    }
+    if (route === 'adicionar-falta') {
+      setCurrentPage('adicionar-falta')
+      return
+    }
+    if (route.startsWith('editar-falta')) {
+      setCurrentPage('editar-falta')
+      const urlParams = new URLSearchParams(route.split('?')[1])
+      setEditingFaltaId(urlParams.get('id'))
       return
     }
     setCurrentPage('dashboard')
@@ -412,7 +462,14 @@ function App() {
   }
 
   const handleDeleteTeam = (id: string) => {
-    setTeams((prevTeams) => prevTeams.filter(t => t.id !== id))
+    // Limpar campo equipe dos funcionários
+    const teamToDelete = teams.find(t => t.id === id);
+    if (teamToDelete) {
+      setEmployees((prevEmployees) => prevEmployees.map(e =>
+        e.equipe === teamToDelete.nome ? { ...e, equipe: '' } : e
+      ));
+    }
+    setTeams((prevTeams) => prevTeams.filter(t => t.id !== id));
   }
 
   // ...existing code...
@@ -420,6 +477,19 @@ function App() {
   const handleEditTeam = (id: string) => {
     setEditingTeamId(id)
     setCurrentPage('cadastro-equipe')
+  }
+
+  const handleAddFalta = (falta: Falta) => {
+    setFaltas((prevFaltas) => [...prevFaltas, falta])
+    setCurrentPage('faltas')
+  }
+
+  const handleUpdateFalta = (updatedFalta: Falta) => {
+    setFaltas((prevFaltas) =>
+      prevFaltas.map(f => f.id === updatedFalta.id ? updatedFalta : f)
+    )
+    setEditingFaltaId(null)
+    setCurrentPage('faltas')
   }
 
   return (
@@ -514,6 +584,8 @@ function App() {
           <TeamView
             team={teams.find(t => t.id === viewingTeamId)}
             employees={employees}
+            departments={departments}
+            businessUnits={businessUnits}
           />
         )}
         {currentPage === 'cadastro-departamento' && (
@@ -539,6 +611,7 @@ function App() {
             onAddPosition={handleAddPosition}
             onUpdatePosition={handleUpdatePosition}
             editingPosition={editingPositionId ? positions.find(p => p.id === editingPositionId) : undefined}
+            positions={positions}
           />
         )}
         {currentPage === 'unidades-negocio' && (
@@ -589,6 +662,33 @@ function App() {
             onAddTeam={handleAddTeam}
             onUpdateTeam={handleUpdateTeam}
             editingTeam={editingTeamId ? teams.find(t => t.id === editingTeamId) || null : null}
+          />
+        )}
+        {currentPage === 'faltas' && (
+          <Faltas 
+            employees={employees}
+            faltas={faltas}
+            positions={positions}
+            departments={departments}
+            teams={teams}
+            onNavigate={handleNavigate}
+            onDeleteFalta={(id) => setFaltas((prev) => prev.filter(f => f.id !== id))}
+          />
+        )}
+        {currentPage === 'adicionar-falta' && (
+          <AdicionarFalta
+            onNavigate={handleNavigate}
+            onAddFalta={handleAddFalta}
+            employees={employees}
+          />
+        )}
+        {currentPage === 'editar-falta' && (
+          <AdicionarFalta
+            onNavigate={handleNavigate}
+            onAddFalta={handleAddFalta}
+            onUpdateFalta={handleUpdateFalta}
+            employees={employees}
+            editingFalta={editingFaltaId ? faltas.find(f => f.id === editingFaltaId) || null : null}
           />
         )}
       </div>

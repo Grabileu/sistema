@@ -33,6 +33,7 @@ const getMonthIndexFromDate = (dateValue: string) => {
 const Birthdays: React.FC<BirthdaysProps> = ({ employees }) => {
   const currentMonthIndex = new Date().getMonth()
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(currentMonthIndex)
+  const [selectedMonthIndexWork, setSelectedMonthIndexWork] = useState(currentMonthIndex)
   const [employeeQuery, setEmployeeQuery] = useState('')
   const [workEmployeeQuery, setWorkEmployeeQuery] = useState('')
 
@@ -48,11 +49,11 @@ const Birthdays: React.FC<BirthdaysProps> = ({ employees }) => {
   const workAnniversaries = useMemo(() => {
     return employees.filter((employee) => {
       const monthIndex = getMonthIndexFromDate(employee.dataAdmissao)
-      if (monthIndex !== selectedMonthIndex) return false
+      if (monthIndex !== selectedMonthIndexWork) return false
       if (!workEmployeeQuery.trim()) return true
       return employee.nomeCompleto.toLowerCase().includes(workEmployeeQuery.trim().toLowerCase())
     })
-  }, [employees, selectedMonthIndex, workEmployeeQuery])
+  }, [employees, selectedMonthIndexWork, workEmployeeQuery])
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -188,8 +189,8 @@ const Birthdays: React.FC<BirthdaysProps> = ({ employees }) => {
                 <label className="text-xs text-gray-500">Mês <span className="text-red-500">*</span></label>
                 <div className="mt-1">
                   <Select
-                    value={selectedMonthIndex}
-                    onChange={(value) => setSelectedMonthIndex(Number(value))}
+                    value={selectedMonthIndexWork}
+                    onChange={(value) => setSelectedMonthIndexWork(Number(value))}
                     options={monthNames.map((month, index) => ({ label: month, value: index }))}
                   />
                 </div>

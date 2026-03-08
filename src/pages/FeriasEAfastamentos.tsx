@@ -70,9 +70,6 @@ const FeriasEAfastamentos = ({ onNovoLancamento }) => {
         <hr className="my-3 border-gray-200" />
         <div className="flex gap-8 border-b border-gray-200">
           <button className="text-blue-600 font-semibold border-b-2 border-blue-600 pb-2 px-1">Calendário</button>
-          <button className="text-gray-700 font-semibold pb-2 px-1">Disponibilidade</button>
-          <button className="text-gray-700 font-semibold pb-2 px-1">Solicitações</button>
-          <button className="text-gray-700 font-semibold pb-2 px-1">Fluxo de aprovação</button>
         </div>
       </div>
       {/* Barra de filtros: seletor de ano à esquerda, filtros à direita */}

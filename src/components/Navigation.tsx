@@ -19,17 +19,14 @@ const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab }) => {
         Controle de ponto
       </button>
       <button
-        onClick={() => setActiveTab('beneficios')}
-        className={`py-4 px-2 font-semibold transition flex items-center gap-2 ${
-          activeTab === 'beneficios'
+        onClick={() => setActiveTab('historico')}
+        className={`py-4 px-2 font-semibold transition ${
+          activeTab === 'historico'
             ? 'text-blue-600 border-b-2 border-blue-600'
             : 'text-gray-600 hover:text-blue-600'
         }`}
       >
-        Benefícios flexíveis
-        <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-1">
-          Novo
-        </span>
+        Histórico
       </button>
     </div>
   )

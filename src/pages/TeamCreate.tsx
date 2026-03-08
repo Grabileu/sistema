@@ -56,7 +56,8 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
     { label: 'Equipe', value: 'equipe' }
   ]
 
-  const availableEmployees = employees.filter((e) => !teamEmployeeIds.includes(e.id))
+  // Impede adicionar funcionário que já tem equipe
+  const availableEmployees = employees.filter((e) => !teamEmployeeIds.includes(e.id) && (!e.equipe || (editingTeam && e.equipe === editingTeam.nome)))
   const teamEmployees = employees.filter((e) => teamEmployeeIds.includes(e.id))
 
   const toggleAvailable = (id: string) => {
@@ -79,6 +80,13 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
 
   const moveToAvailable = () => {
     if (selectedTeamIds.length === 0) return
+    // Limpa o campo equipe dos funcionários removidos
+    selectedTeamIds.forEach(id => {
+      const idx = employees.findIndex(e => e.id === id);
+      if (idx !== -1) {
+        employees[idx] = { ...employees[idx], equipe: '' };
+      }
+    });
     setTeamEmployeeIds((prev) => prev.filter((id) => !selectedTeamIds.includes(id)))
     setSelectedTeamIds([])
   }
@@ -114,24 +122,18 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
         observacao: editingTeam.observacao || ''
       })
       setTeamEmployeeIds(editingTeam.employeeIds || [])
-      // Restaurar gestores selecionados ao editar
-      if (editingTeam.totalGestores && editingTeam.employeeIds && employees.length > 0) {
-        // Supondo que os primeiros N funcionários da lista employeeIds são gestores
-        // (ajuste conforme sua lógica de persistência de gestores)
-        // Aqui, se você salvar os IDs dos gestores em outro campo, use esse campo!
-        // Exemplo: editingTeam.gestorIds
-        // Se não, ajuste para sua lógica real de persistência
-        // Aqui, vamos assumir que employeeIds dos gestores são os primeiros N
-        const gestores = employees.filter(e => editingTeam.employeeIds.includes(e.id)).slice(0, editingTeam.totalGestores)
-        setGestoresSelecionados(gestores)
+      // Restaurar gestores selecionados ao editar usando gestorIds
+      if (editingTeam.gestorIds && Array.isArray(editingTeam.gestorIds)) {
+        const gestores = employees.filter(e => editingTeam.gestorIds.includes(e.id));
+        setGestoresSelecionados(gestores);
       } else {
-        setGestoresSelecionados([])
+        setGestoresSelecionados([]);
       }
-      return
+      return;
     }
-    setFormData((prev) => ({ ...prev, codigo: getNextCode() }))
-    setGestoresSelecionados([])
-  }, [editingTeam, employees])
+    setFormData((prev) => ({ ...prev, codigo: getNextCode() }));
+    setGestoresSelecionados([]);
+  }, [editingTeam, employees]);
 
   const buildTeam = (): Team => {
     const department = departments.find((d) => d.id === formData.departamentoId)
@@ -145,6 +147,7 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
       departamentoNome: department?.nome || '',
       observacao: formData.observacao,
       employeeIds: teamEmployeeIds,
+      gestorIds: gestoresSelecionados.map(g => g.id),
       totalFuncionarios: teamEmployeeIds.length,
       totalGestores: gestoresSelecionados.length,
       criadoEm: editingTeam?.criadoEm || now
@@ -174,10 +177,19 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
     }
 
     if (currentStep === 3) {
+      const teamObj = buildTeam();
+      // Atualiza o campo 'equipe' dos funcionários
+      teamEmployeeIds.forEach(id => {
+        const idx = employees.findIndex(e => e.id === id);
+        if (idx !== -1) {
+          employees[idx] = { ...employees[idx], equipe: teamObj.nome };
+        }
+      });
+      localStorage.setItem('employees', JSON.stringify(employees));
       if (editingTeam) {
-        onUpdateTeam?.(buildTeam())
+        onUpdateTeam?.(teamObj)
       } else {
-        onAddTeam?.(buildTeam())
+        onAddTeam?.(teamObj)
       }
       onNavigate?.('equipes')
     }
@@ -482,7 +494,7 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
                                 </div>
                                 <div className="mt-2 text-xs text-gray-600 space-y-1">
                                   <div>Departamento: -</div>
-                                  <div>Equipe: {employee.equipe || '-'}</div>
+                                  <div>Equipe: {employee.equipe && employee.equipe !== '' ? employee.equipe : '-'}</div>
                                   <div>Cargo: {employee.cargo || '-'}</div>
                                 </div>
                               </button>

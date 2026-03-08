@@ -128,7 +128,20 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
     }
   }, []);
 
-  const [errors, setErrors] = useState({
+  const [errors, setErrors] = useState<{
+    nomeCompleto: boolean;
+    email: boolean | string;
+    cpf: boolean;
+    genero: boolean;
+    dataNascimento: boolean;
+    isCLT: boolean;
+    unidadeNegocio: boolean;
+    dataAdmissao: boolean;
+    equipe: boolean;
+    cargo: boolean;
+    turno: boolean;
+    criarDiasApartirDe: boolean;
+  }>({
     nomeCompleto: false,
     email: false,
     cpf: false,
@@ -146,7 +159,7 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
   const handleNext = () => {
     if (currentStep === 1) {
       // Validação dos campos obrigatórios da etapa 1
-      let emailError = false;
+      let emailError: boolean | string = false;
       if (!formData.email) {
         emailError = 'required';
       } else if (!formData.email.includes('@')) {
@@ -158,7 +171,13 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
         cpf: !formData.cpf,
         genero: !formData.genero,
         dataNascimento: !formData.dataNascimento,
-        isCLT: !formData.isCLT
+        isCLT: !formData.isCLT,
+        unidadeNegocio: !formData.unidadeNegocio,
+        dataAdmissao: !formData.dataAdmissao,
+        equipe: !formData.equipe,
+        cargo: !formData.cargo,
+        turno: !formData.turno,
+        criarDiasApartirDe: !formData.criarDiasApartirDe
       };
       setErrors(newErrors);
       if (Object.values(newErrors).some(error => error)) {

@@ -5,11 +5,19 @@ interface PositionCreateProps {
   onAddPosition?: (position: any) => void
   onUpdatePosition?: (position: any) => void
   editingPosition?: any
+  positions?: any[]
 }
 
-const PositionCreate: React.FC<PositionCreateProps> = ({ onNavigate, onAddPosition, onUpdatePosition, editingPosition }) => {
+const PositionCreate: React.FC<PositionCreateProps> = ({ onNavigate, onAddPosition, onUpdatePosition, editingPosition, positions = [] }) => {
+  const getNextCode = () => {
+    if (editingPosition) return editingPosition.codigo
+    const codes = positions.map(p => parseInt(p.codigo) || 0)
+    const maxCode = codes.length > 0 ? Math.max(...codes) : 0
+    return (maxCode + 1).toString()
+  }
+
   const [formData, setFormData] = useState({
-    codigo: editingPosition?.codigo || '',
+    codigo: getNextCode(),
     nome: editingPosition?.nome || '',
     descricao: editingPosition?.descricao || ''
   })
@@ -75,11 +83,8 @@ const PositionCreate: React.FC<PositionCreateProps> = ({ onNavigate, onAddPositi
                 type="text"
                 placeholder="Digite"
                 value={formData.codigo}
-                onChange={(e) => {
-                  setFormData({ ...formData, codigo: e.target.value })
-                  setErrors({ ...errors, codigo: false })
-                }}
-                className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                readOnly
+                className="w-full px-4 py-3 bg-gray-200 border-0 rounded text-gray-900 placeholder-gray-500 cursor-not-allowed"
               />
               {errors.codigo && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
             </div>
