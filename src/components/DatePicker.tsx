@@ -8,16 +8,19 @@ interface DatePickerProps {
   className?: string
   error?: boolean
   disabled?: boolean
+  ref?: React.Ref<HTMLInputElement>
+  autoOpen?: boolean
 }
 
-const DatePicker: React.FC<DatePickerProps> = ({ 
-  value, 
-  onChange, 
+const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(({
+  value,
+  onChange,
   placeholder = 'DD/MM/AAAA',
   className = '',
   error = false,
-  disabled = false
-}) => {
+  disabled = false,
+  autoOpen = false
+}, ref) => {
   const [showCalendar, setShowCalendar] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -40,6 +43,13 @@ const DatePicker: React.FC<DatePickerProps> = ({
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [showCalendar])
+
+  // Abre o calendário automaticamente quando autoOpen muda para true
+  useEffect(() => {
+    if (autoOpen && !showCalendar) {
+      setShowCalendar(true)
+    }
+  }, [autoOpen, showCalendar])
 
   // Atualiza selectedDate quando value muda
   useEffect(() => {
@@ -97,12 +107,20 @@ const DatePicker: React.FC<DatePickerProps> = ({
     }
   }
 
+  const handleInputFocus = () => {
+    if (autoOpen && !showCalendar) {
+      setShowCalendar(true)
+    }
+  }
+
   return (
-    <div className="relative" ref={calendarRef}>
+    <div className="relative inline-block w-full" ref={calendarRef}>
       <input
+        ref={ref}
         type="text"
         value={value}
         onChange={handleInputChange}
+        onFocus={handleInputFocus}
         placeholder={placeholder}
         disabled={disabled}
         className={`w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 pr-10 ${className} ${error ? 'border-red-500' : ''} ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
@@ -110,7 +128,12 @@ const DatePicker: React.FC<DatePickerProps> = ({
       <button
         type="button"
         className="absolute right-3 top-1/2 transform -translate-y-1/2"
-        onClick={() => !disabled && setShowCalendar(!showCalendar)}
+        onClick={(e) => {
+          e.stopPropagation()
+          if (!disabled) {
+            setShowCalendar(!showCalendar)
+          }
+        }}
         disabled={disabled}
       >
         <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,7 +143,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
 
       {/* Calendário */}
       {showCalendar && (
-        <div className="absolute top-full left-0 mt-2 bg-white shadow-xl rounded-lg p-4 z-50 border border-gray-200" style={{minWidth: '300px'}}>
+        <div className="absolute top-full left-0 mt-2 bg-white shadow-xl rounded-lg p-4 z-50 border border-gray-200" style={{minWidth: '300px', zIndex: 9999}}>
           {/* Cabeçalho do calendário */}
           <div className="flex items-center justify-between mb-4">
             <button
@@ -216,6 +239,8 @@ const DatePicker: React.FC<DatePickerProps> = ({
       )}
     </div>
   )
-}
+})
+
+DatePicker.displayName = 'DatePicker'
 
 export default DatePicker

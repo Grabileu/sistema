@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { MoreVertical, Edit2, Trash2, Plus } from 'lucide-react'
+import { MoreVertical, Edit2, Trash2, Plus, Search } from 'lucide-react'
 import { Employee } from '../App'
 import DatePicker from '../components/DatePicker'
 import Select from '../components/Select'
@@ -27,6 +27,12 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
   const [searchQuery, setSearchQuery] = useState('')
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  // Refs para focar nos campos
+  const dataFimRef = useRef<HTMLInputElement>(null)
+
+  // Estado para controlar abertura automática do calendário da data fim
+  const [autoOpenDataFim, setAutoOpenDataFim] = useState(false)
 
   // Estados para os filtros de entrada (não aplicados automaticamente)
   const [inputDataInicio, setInputDataInicio] = useState('')
@@ -118,12 +124,16 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
 
   const handleDataInicioChange = (value: string) => {
     setInputDataInicio(value)
-    // Temporariamente removido o foco automático para resolver problema da tela branca
-    // if (value && dataFimRef.current) {
-    //   setTimeout(() => {
-    //     dataFimRef.current?.focus()
-    //   }, 100)
-    // }
+    // Pular para o campo de data fim após selecionar data início
+    if (value && dataFimRef.current) {
+      setTimeout(() => {
+        dataFimRef.current?.focus()
+        // Abrir o calendário automaticamente após focar
+        setAutoOpenDataFim(true)
+        // Resetar o estado após um curto período
+        setTimeout(() => setAutoOpenDataFim(false), 100)
+      }, 100)
+    }
   }
 
   const handleDeleteFalta = (id: string) => {
@@ -148,7 +158,7 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
           <h1 className="text-xl font-semibold text-gray-900">Faltas</h1>
           <button
             onClick={handleAddFalta}
-            className="bg-indigo-600 text-white px-6 py-2.5 rounded font-medium hover:bg-indigo-700 flex items-center gap-2"
+            className="w-fit bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-indigo-700 flex items-center gap-2 justify-center"
           >
             <Plus size={18} />
             Adicionar falta
@@ -158,18 +168,21 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
 
       <div className="container mx-auto px-6 py-6">
         <div className="bg-white shadow rounded-lg p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 relative">
             <div>
               <label className="block text-gray-700 text-sm mb-2">
                 Nome do funcionário
               </label>
-              <input
-                type="text"
-                placeholder="Pesquisar por nome"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Pesquisar por nome"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-gray-100 border border-gray-200 rounded-md pl-3 pr-9 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
             </div>
 
             <div>
@@ -188,9 +201,11 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
                 Data fim
               </label>
               <DatePicker
+                ref={dataFimRef}
                 value={inputDataFim}
                 onChange={setInputDataFim}
                 placeholder="Selecionar data"
+                autoOpen={autoOpenDataFim}
               />
             </div>
 
@@ -249,7 +264,7 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
           <div className="flex justify-end">
             <button 
               onClick={handlePesquisar}
-              className="bg-indigo-600 text-white px-6 py-2 rounded font-medium hover:bg-indigo-700"
+              className="w-40 bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-indigo-700"
             >
               Pesquisar
             </button>
