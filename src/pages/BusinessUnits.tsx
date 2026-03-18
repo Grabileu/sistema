@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { MoreVertical, Edit2, Trash2 } from 'lucide-react'
 import { BusinessUnit } from '../App'
+import { useClickOutside } from '../hooks/useClickOutside'
 
 interface BusinessUnitsProps {
   businessUnits: BusinessUnit[]
@@ -34,7 +35,7 @@ const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate
     return () => window.removeEventListener('storage', loadCompanyData)
   }, [])
 
-  // Buscar dados da empresa como unidade principal
+  // Buscar dados da empresa como loja principal
   const getMainUnit = () => {
     const unitoPrincipal = businessUnits.find(unit => unit.unidadePrincipal)
     
@@ -62,19 +63,10 @@ const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate
 
   const mainUnit = getMainUnit()
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpenMenuId(null)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  useClickOutside(menuRef, () => setOpenMenuId(null))
 
   const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir esta unidade de negócio?')) {
+    if (confirm('Tem certeza que deseja excluir esta loja?')) {
       onDeleteBusinessUnit?.(id)
       setOpenMenuId(null)
     }
@@ -84,12 +76,12 @@ const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate
     <div className="bg-gray-50 min-h-screen">
       <div className="bg-white border-b">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-gray-900">Unidades de negócio</h1>
+          <h1 className="text-xl font-semibold text-gray-900">Lojas</h1>
           <button
             onClick={() => onNavigate?.('cadastro-unidade-negocio')}
             className="bg-indigo-600 text-white px-6 py-2.5 rounded font-medium hover:bg-indigo-700"
           >
-            Cadastrar unidade de negócio
+            Cadastrar loja
           </button>
         </div>
       </div>
@@ -97,12 +89,12 @@ const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate
       <div className="container mx-auto px-6 py-6">
         {businessUnits.length === 0 && !mainUnit ? (
           <div className="bg-white shadow rounded-lg p-12 text-center">
-            <p className="text-gray-500 text-lg mb-4">Nenhuma unidade de negócio cadastrada</p>
+            <p className="text-gray-500 text-lg mb-4">Nenhuma loja cadastrada</p>
             <button
               onClick={() => onNavigate?.('cadastro-unidade-negocio')}
               className="bg-indigo-600 text-white px-6 py-2.5 rounded font-medium hover:bg-indigo-700"
             >
-              Cadastrar primeira unidade
+              Cadastrar primeira loja
             </button>
           </div>
         ) : (
@@ -114,7 +106,7 @@ const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
-                        Unidade Principal
+                        Loja Principal
                       </span>
                     </div>
                     <h2 className="text-2xl font-bold text-gray-900">{mainUnit.nomeUnidade}</h2>
@@ -197,7 +189,7 @@ const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate
                 <thead className="bg-gray-50 border-b">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Nome da unidade
+                      Nome da loja
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                       Unidade principal?

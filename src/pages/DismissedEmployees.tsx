@@ -1,6 +1,7 @@
 import React, { useRef } from 'react'
 import ReactDOM from 'react-dom'
 import { Search } from 'lucide-react'
+import { formatCPF } from '../utils/formatters'
 
 const DismissedEmployees: React.FC = () => {
   // Exemplo de dados de demitidos
@@ -17,6 +18,7 @@ const DismissedEmployees: React.FC = () => {
   const [openMenuId, setOpenMenuId] = React.useState<number | null>(null);
   const [menuPosition, setMenuPosition] = React.useState<{top: number, left: number} | null>(null);
   const [showConfirm, setShowConfirm] = React.useState<{id: number, nome: string} | null>(null);
+  const [cpfFilter, setCpfFilter] = React.useState('');
   const menuBtnRefs = useRef<{[key: number]: HTMLButtonElement | null}>({});
 
   return (
@@ -41,18 +43,24 @@ const DismissedEmployees: React.FC = () => {
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="text-xs text-gray-500">Nome</label>
-              <input
-                type="text"
-                placeholder="Digite"
-                className="mt-1 w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+              <div className="relative mt-1">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Digite"
+                  className="w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-100 pr-9"
+                />
+              </div>
             </div>
             <div>
               <label className="text-xs text-gray-500">CPF</label>
               <input
                 type="text"
-                placeholder="Digite"
-                className="mt-1 w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="000.000.000-00"
+                value={cpfFilter}
+                onChange={(e) => setCpfFilter(formatCPF(e.target.value))}
+                maxLength={14}
+                className="mt-1 w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-100"
               />
             </div>
             <div>
@@ -60,7 +68,7 @@ const DismissedEmployees: React.FC = () => {
               <input
                 type="text"
                 placeholder="Digite"
-                className="mt-1 w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-1 w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-100"
               />
             </div>
             <div className="flex items-end">

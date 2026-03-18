@@ -13,7 +13,7 @@ const PositionCreate: React.FC<PositionCreateProps> = ({ onNavigate, onAddPositi
     if (editingPosition) return editingPosition.codigo
     const codes = positions.map(p => parseInt(p.codigo) || 0)
     const maxCode = codes.length > 0 ? Math.max(...codes) : 0
-    return (maxCode + 1).toString()
+    return (maxCode + 1).toString().padStart(2, '0')
   }
 
   const [formData, setFormData] = useState({
@@ -81,10 +81,11 @@ const PositionCreate: React.FC<PositionCreateProps> = ({ onNavigate, onAddPositi
               </label>
               <input
                 type="text"
-                placeholder="Digite"
+                placeholder="Codigo gerado automaticamente"
                 value={formData.codigo}
                 readOnly
-                className="w-full px-4 py-3 bg-gray-200 border-0 rounded text-gray-900 placeholder-gray-500 cursor-not-allowed"
+                disabled
+                className="w-full px-3 py-2 bg-gray-200 border border-gray-200 rounded text-gray-900 placeholder-gray-500 cursor-not-allowed disabled:cursor-not-allowed opacity-70"
               />
               {errors.codigo && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
             </div>
@@ -101,7 +102,7 @@ const PositionCreate: React.FC<PositionCreateProps> = ({ onNavigate, onAddPositi
                   setFormData({ ...formData, nome: e.target.value })
                   setErrors({ ...errors, nome: false })
                 }}
-                className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
               />
               {errors.nome && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
             </div>
@@ -114,7 +115,7 @@ const PositionCreate: React.FC<PositionCreateProps> = ({ onNavigate, onAddPositi
               value={formData.descricao}
               onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
               rows={4}
-              className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500 resize-none"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500 resize-none"
             />
           </div>
 

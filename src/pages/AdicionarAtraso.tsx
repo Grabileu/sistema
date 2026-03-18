@@ -4,15 +4,15 @@ import DatePicker from '../components/DatePicker'
 import Select from '../components/Select'
 import { buildEmployeeOptions } from '../utils/formatters'
 
-interface AdicionarFaltaProps {
+interface AdicionarAtrasoProps {
   onNavigate?: (route: string) => void
-  onAddFalta?: (falta: any) => void
-  onUpdateFalta?: (falta: any) => void
+  onAddAtraso?: (atraso: any) => void
+  onUpdateAtraso?: (atraso: any) => void
   employees: Employee[]
-  editingFalta?: any
+  editingAtraso?: any
 }
 
-const AdicionarFalta: React.FC<AdicionarFaltaProps> = ({ onNavigate, onAddFalta, onUpdateFalta, employees, editingFalta }) => {
+const AdicionarAtraso: React.FC<AdicionarAtrasoProps> = ({ onNavigate, onAddAtraso, onUpdateAtraso, employees, editingAtraso }) => {
   const standardFieldClass = 'rounded-md text-sm focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-100'
   const funcionarioRef = useRef<HTMLButtonElement>(null)
   const dataRef = useRef<HTMLInputElement>(null)
@@ -20,9 +20,9 @@ const AdicionarFalta: React.FC<AdicionarFaltaProps> = ({ onNavigate, onAddFalta,
   const saveButtonRef = useRef<HTMLButtonElement>(null)
 
   const [formData, setFormData] = useState({
-    funcionarioId: editingFalta?.funcionarioId || '',
-    data: editingFalta?.data || '',
-    motivo: editingFalta?.motivo || ''
+    funcionarioId: editingAtraso?.funcionarioId || '',
+    data: editingAtraso?.data || '',
+    motivo: editingAtraso?.motivo || ''
   })
 
   const [errors, setErrors] = useState({
@@ -32,10 +32,9 @@ const AdicionarFalta: React.FC<AdicionarFaltaProps> = ({ onNavigate, onAddFalta,
 
   const motivos = [
     { label: 'Selecione', value: '' },
-    { label: 'Falta injustificada', value: 'Falta injustificada' },
-    { label: 'Doença', value: 'Doença' },
-    { label: 'Problema pessoal', value: 'Problema pessoal' },
-    { label: 'Compromisso urgente', value: 'Compromisso urgente' },
+    { label: 'Atraso leve', value: 'Atraso leve' },
+    { label: 'Atraso grave', value: 'Atraso grave' },
+    { label: 'Problema transporte', value: 'Problema transporte' },
     { label: 'Outro', value: 'Outro' }
   ]
 
@@ -55,46 +54,40 @@ const AdicionarFalta: React.FC<AdicionarFaltaProps> = ({ onNavigate, onAddFalta,
 
     const selectedEmployee = employees.find((e) => e.id === formData.funcionarioId)
 
-    if (editingFalta) {
-      // Atualizar falta existente
-      const updatedFalta = {
-        ...editingFalta,
+    if (editingAtraso) {
+      const updated = {
+        ...editingAtraso,
         funcionarioId: formData.funcionarioId,
         funcionarioNome: selectedEmployee?.nomeCompleto || '',
-        data: formData.data, // já está DD/MM/AAAA
+        data: formData.data,
         motivo: formData.motivo
       }
-      onUpdateFalta?.(updatedFalta)
+      onUpdateAtraso?.(updated)
     } else {
-      // Criar nova falta
-      // Sempre salvar como DD/MM/AAAA
-      const dataFormatada = formData.data && /^\d{4}-\d{2}-\d{2}$/.test(formData.data)
-        ? formData.data.split('-').reverse().join('/')
-        : formData.data;
-      const newFalta = {
+      const newAtraso = {
         id: Date.now().toString(),
         funcionarioId: formData.funcionarioId,
         funcionarioNome: selectedEmployee?.nomeCompleto || '',
-        data: dataFormatada,
+        data: formData.data,
         motivo: formData.motivo,
         criadoEm: new Date().toLocaleDateString('pt-BR')
       }
-      onAddFalta?.(newFalta)
+      onAddAtraso?.(newAtraso)
     }
-    onNavigate?.('faltas')
+    onNavigate?.('atrasos')
   }
 
   return (
     <div className="bg-gray-50 min-h-screen">
       <div className="bg-white border-b">
         <div className="container mx-auto px-6 py-4">
-          <h1 className="text-xl font-semibold text-gray-900">{editingFalta ? 'Editar falta' : 'Adicionar falta'}</h1>
+          <h1 className="text-xl font-semibold text-gray-900">{editingAtraso ? 'Editar atraso' : 'Adicionar atraso'}</h1>
         </div>
       </div>
 
       <div className="container mx-auto px-6 py-6">
         <div className="bg-white shadow rounded-lg p-8">
-          <h2 className="text-lg font-semibold mb-6">Registre a falta do funcionário</h2>
+          <h2 className="text-lg font-semibold mb-6">Registre o atraso do funcionário</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
@@ -119,7 +112,7 @@ const AdicionarFalta: React.FC<AdicionarFaltaProps> = ({ onNavigate, onAddFalta,
 
             <div>
               <label className="block text-gray-700 text-sm mb-2">
-                Data da falta <span className="text-red-500">*</span>
+                Data do atraso <span className="text-red-500">*</span>
               </label>
               <DatePicker
                 ref={dataRef}
@@ -153,7 +146,7 @@ const AdicionarFalta: React.FC<AdicionarFaltaProps> = ({ onNavigate, onAddFalta,
 
           <div className="flex items-center justify-between">
             <button
-              onClick={() => onNavigate?.('faltas')}
+              onClick={() => onNavigate?.('atrasos')}
               className="bg-gray-200 text-gray-700 px-8 py-2.5 rounded font-medium hover:bg-gray-300"
             >
               Voltar
@@ -163,7 +156,7 @@ const AdicionarFalta: React.FC<AdicionarFaltaProps> = ({ onNavigate, onAddFalta,
               ref={saveButtonRef}
               className="bg-indigo-600 text-white px-8 py-2.5 rounded font-medium hover:bg-indigo-700"
             >
-              {editingFalta ? 'Salvar' : 'Cadastrar'}
+              {editingAtraso ? 'Salvar' : 'Cadastrar'}
             </button>
           </div>
         </div>
@@ -172,4 +165,4 @@ const AdicionarFalta: React.FC<AdicionarFaltaProps> = ({ onNavigate, onAddFalta,
   )
 }
 
-export default AdicionarFalta
+export default AdicionarAtraso

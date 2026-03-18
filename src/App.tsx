@@ -1,6 +1,45 @@
+// Função utilitária para registrar ações de afastamento/licença no histórico
+function registrarHistoricoLicenca({
+  acao,
+  usuario,
+  funcionarioNome,
+  tipoLicenca,
+  dataInicio,
+  dataTermino,
+  detalhes,
+  setHistoryEntries
+}) {
+  // Converte datas de DD/MM/AAAA para AAAA-MM-DD se necessário
+  function toISO(dateStr) {
+    if (!dateStr) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+    const [dia, mes, ano] = dateStr.split('/');
+    if (ano && mes && dia) return `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+    return dateStr;
+  }
+  const inicioISO = toISO(dataInicio);
+  const terminoISO = toISO(dataTermino);
+  const periodo = terminoISO && terminoISO !== inicioISO
+    ? `${inicioISO} a ${terminoISO}`
+    : inicioISO;
+  setHistoryEntries((prev) => [
+    {
+      id: `${acao}-${funcionarioNome}-${tipoLicenca}-${periodo}-${Date.now()}`,
+      usuario: usuario || 'Usuário',
+      acao,
+      alvo: funcionarioNome ? `para ${funcionarioNome.replace(/^para /, '')}` : '',
+      tipo: 'licenca',
+      dataRegistro: new Date().toISOString(),
+      dataEvento: periodo,
+      detalhes,
+    },
+    ...prev
+  ]);
+}
 // ...existing code...
 import React, { useEffect, useState } from 'react'
 import { CSSTransition, SwitchTransition } from 'react-transition-group';
+import { AlertTriangle } from 'lucide-react'
 import Header from './components/Header'
 import Calendar from './pages/Calendar'
 import LancamentoLicenca from './pages/LancamentoLicenca'
@@ -9,8 +48,11 @@ import Navigation from './components/Navigation'
 import PromoCards from './components/PromoCards'
 import StatusCard from './components/StatusCard'
 import PendingTasks from './components/PendingTasks'
+import HistoryList, { HistoryEntry } from './components/HistoryList'
 import Sidebar from './components/Sidebar'
+import SystemMotionFeedback from './components/SystemMotionFeedback'
 import ActiveEmployees from './pages/ActiveEmployees'
+import PerfilFuncionario from './pages/PerfilFuncionario'
 import EmployeeRegistration from './pages/EmployeeRegistration'
 import Birthdays from './pages/Birthdays'
 import DismissedEmployees from './pages/DismissedEmployees'
@@ -31,6 +73,21 @@ import ShiftRegistration from './pages/ShiftRegistration'
 import TeamView from './pages/TeamView';
 import Faltas from './pages/Faltas';
 import AdicionarFalta from './pages/AdicionarFalta';
+import Atrasos from './pages/Atrasos';
+import AdicionarAtraso from './pages/AdicionarAtraso';
+import QuebraDeCaixa from './pages/QuebraDeCaixa';
+import AdicionarQuebraDeCaixa from './pages/AdicionarQuebraDeCaixa';
+import Ceasa from './pages/Ceasa';
+import CeasaSupplierCreate from './pages/CeasaSupplierCreate';
+import CeasaPurchaseCreate from './pages/CeasaPurchaseCreate';
+import CeasaAnalytics from './pages/CeasaAnalytics';
+import Beneficios from './pages/Beneficios';
+import Feriados from './pages/Feriados.tsx';
+import Login from './pages/Login';
+import Usuarios from './pages/Usuarios';
+import Administradores from './pages/Administradores';
+import PermissoesPerfis from './pages/PermissoesPerfis';
+import { ProfilePermissions, loadProfilePermissions, saveProfilePermissions, canAccessPage, getFirstAllowedPage } from './utils/permissions';
 
 export interface Employee {
   id: string;
@@ -49,7 +106,41 @@ export interface Employee {
   ultimoAcesso: string;
   ultimoRegistro: string;
   criarDiasApartirDe?: string;
-  unidadeNegocio: string;
+  loja: string;
+  corRaca?: string;
+  estadoCivil?: string;
+  categoria?: string;
+  mae?: string;
+  pai?: string;
+  rg?: string;
+  cnh?: string;
+  nacionalidade?: string;
+  paisNascimento?: string;
+  estadoNascimento?: string;
+  cidadeNascimento?: string;
+  obsGerais?: string;
+  escolaridade?: string;
+  conclusao?: string;
+  areasFormacao?: string;
+  necessidadeEspecial?: string;
+  tipoNecessidade?: string;
+  obsNecessidade?: string;
+  // Novos campos para Profissional e Financeiro
+  dataInicio?: string;
+  dataExameAdmissional?: string;
+  pisPasep?: string;
+  carteiraTrabalho?: string;
+  registroProfissional?: string;
+  vinculo?: string;
+  cargoConfianca?: string;
+  primeiroEmprego?: string;
+  remuneracao?: string;
+  frequenciaPagamento?: string;
+  mesmoSalarioDesde?: string;
+  estabilidade?: string;
+  seguroDesemprego?: string;
+  aposentado?: string;
+  departamento?: string;
 }
 
 export interface Position {
@@ -95,6 +186,8 @@ export interface Team {
   id: string;
   codigo: string;
   nome: string;
+  lojaId?: string;
+  lojaNome?: string;
   departamentoId: string;
   departamentoNome: string;
   observacao?: string;
@@ -114,7 +207,183 @@ export interface Falta {
   criadoEm: string;
 }
 
+export interface Atraso {
+  id: string;
+  funcionarioId: string;
+  funcionarioNome: string;
+  data: string;
+  motivo: string;
+  criadoEm: string;
+}
+
+export interface QuebraDeCaixa {
+  id: string;
+  funcionarioId: string;
+  funcionarioNome: string;
+  data: string;
+  formaPagamento: string;
+  criadoEm: string;
+}
+
+export interface Beneficio {
+  id: string;
+  nome: string;
+  categoria: 'hora_extra' | 'adicional' | 'vale' | 'beneficio' | 'previdencia' | 'outros';
+  tipo: 'percentual' | 'valor_fixo' | 'variavel';
+  percentual?: number;
+  valor?: number;
+  descricao?: string;
+  incidencia?: 'provento' | 'desconto' | 'informativo';
+  baseCalculo?: 'salario_base' | 'hora_normal' | 'piso_categoria' | 'valor_mensal' | 'valor_dia' | 'valor_evento' | 'nao_se_aplica';
+  natureza?: 'legal' | 'convencao_coletiva' | 'politica_interna' | 'premiacao';
+  elegibilidadeTipo?: 'todos' | 'empresa' | 'loja' | 'departamento' | 'cargo' | 'equipe' | 'contrato';
+  elegibilidadeValores?: string[];
+  vigenciaInicio?: string;
+  vigenciaFim?: string;
+  tetoMensal?: number;
+  carenciaDias?: number;
+  coparticipacao?: number;
+  codigoRubrica?: string;
+  codigoInterno?: string;
+  incideINSS?: boolean;
+  incideFGTS?: boolean;
+  incideIRRF?: boolean;
+  enviaESocial?: boolean;
+  ativo: boolean;
+  criadoEm: string;
+}
+
+export interface SistemaUsuario {
+  id: string;
+  nome: string;
+  usuario: string;
+  email: string;
+  senhaHash: string;
+  perfil: 'admin' | 'rh' | 'gestor' | 'colaborador';
+  ativo: boolean;
+  criadoEm: string;
+  ultimoAcesso?: string;
+}
+
+export interface LoggedUser {
+  id: string;
+  nome: string;
+  usuario: string;
+  email: string;
+  perfil: SistemaUsuario['perfil'];
+}
+
+interface DeleteBlockedModalState {
+  entityLabel: string;
+  entityName: string;
+  employees: Employee[];
+}
+
 function App() {
+  // Histórico de ações do sistema (persistente)
+  const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>(() => {
+    const stored = localStorage.getItem('historyEntries');
+    if (stored) {
+      try {
+        return JSON.parse(stored) as HistoryEntry[];
+      } catch {
+        localStorage.removeItem('historyEntries');
+      }
+    }
+    return [];
+  });
+  // Função para limpar o histórico manualmente
+  const limparHistorico = () => {
+    setHistoryEntries([]);
+    localStorage.removeItem('historyEntries');
+  };
+
+  // Sempre salvar histórico no localStorage
+  useEffect(() => {
+    localStorage.setItem('historyEntries', JSON.stringify(historyEntries));
+  }, [historyEntries]);
+  const hasRenderedPageRef = React.useRef(false)
+
+  const [loggedUser, setLoggedUser] = useState<LoggedUser | null>(() => {
+    const stored = localStorage.getItem('sistema_usuario_logado')
+    if (stored) {
+      try { return JSON.parse(stored) as LoggedUser } catch { /* ignore */ }
+    }
+    return null
+  })
+
+  // Inicializa admin padrão se não existir nenhum usuário
+  useEffect(() => {
+    const init = async () => {
+      const stored = localStorage.getItem('sistema_usuarios')
+      const users: SistemaUsuario[] = stored ? JSON.parse(stored) : []
+      if (users.length === 0) {
+        const { hashPassword } = await import('./utils/auth')
+        const senhaHash = await hashPassword('admin123')
+        const admin: SistemaUsuario = {
+          id: 'admin-default',
+          nome: 'Administrador',
+          usuario: 'admin',
+          email: 'admin@sistema.com',
+          senhaHash,
+          perfil: 'admin',
+          ativo: true,
+          criadoEm: new Date().toISOString(),
+        }
+        localStorage.setItem('sistema_usuarios', JSON.stringify([admin]))
+      }
+    }
+    init()
+  }, [])
+
+  const handleLogin = (user: LoggedUser) => {
+    setLoggedUser(user)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('sistema_usuario_logado')
+    setLoggedUser(null)
+  }
+
+  const [profilePermissions, setProfilePermissions] = useState<ProfilePermissions>(() => loadProfilePermissions())
+  const [showRoutePulse, setShowRoutePulse] = useState(false)
+  const [connectionState, setConnectionState] = useState<'normal' | 'unstable' | 'offline'>(() => {
+    if (typeof navigator === 'undefined') return 'normal'
+    return navigator.onLine ? 'normal' : 'offline'
+  })
+
+  const handleSaveProfilePermissions = (permissions: ProfilePermissions) => {
+    setProfilePermissions(permissions)
+    saveProfilePermissions(permissions)
+    showSuccessToast('Permissoes por perfil atualizadas com sucesso.')
+  }
+
+  const canAccessRouteForCurrentUser = (route: string): boolean => {
+    if (!loggedUser) return false
+    return canAccessPage(route, loggedUser.perfil, profilePermissions)
+  }
+
+  const readConnectionState = (): 'normal' | 'unstable' | 'offline' => {
+    if (typeof navigator === 'undefined') return 'normal'
+    if (!navigator.onLine) return 'offline'
+
+    const connection = (navigator as Navigator & {
+      connection?: {
+        effectiveType?: string
+        saveData?: boolean
+        addEventListener?: (type: string, listener: () => void) => void
+        removeEventListener?: (type: string, listener: () => void) => void
+      }
+    }).connection
+
+    if (connection?.saveData) return 'unstable'
+    if (connection?.effectiveType && ['slow-2g', '2g'].includes(connection.effectiveType)) {
+      return 'unstable'
+    }
+
+    return 'normal'
+  }
+
     const [viewingTeamId, setViewingTeamId] = useState<string | null>(null);
     const handleViewTeam = (id: string) => {
       setViewingTeamId(id);
@@ -154,6 +423,10 @@ function App() {
   const [editingPositionId, setEditingPositionId] = useState<string | null>(null)
   const [editingEmployeeId, setEditingEmployeeId] = useState<string | null>(null)
   const [editingFaltaId, setEditingFaltaId] = useState<string | null>(null)
+  const [editingAtrasoId, setEditingAtrasoId] = useState<string | null>(null)
+  const [editingQuebraId, setEditingQuebraId] = useState<string | null>(null)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [deleteBlockedModal, setDeleteBlockedModal] = useState<DeleteBlockedModalState | null>(null)
 
   const [businessUnits, setBusinessUnits] = useState<BusinessUnit[]>(() => {
     const storedUnits = localStorage.getItem('businessUnits')
@@ -205,9 +478,55 @@ function App() {
     return []
   })
 
+  const [atrasos, setAtrasos] = useState<Atraso[]>(() => {
+    const stored = localStorage.getItem('atrasos')
+    if (stored) {
+      try {
+        return JSON.parse(stored) as Atraso[]
+      } catch {
+        localStorage.removeItem('atrasos')
+      }
+    }
+    return []
+  })
+
+  const [quebras, setQuebras] = useState<QuebraDeCaixa[]>(() => {
+    const stored = localStorage.getItem('quebras')
+    if (stored) {
+      try {
+        const arr = JSON.parse(stored) as any[]
+        // migrate old objects with motivo field
+        return arr.map(item => ({
+          ...item,
+          formaPagamento: item.formaPagamento || item.motivo || '',
+          valor: item.valor || '',
+          tipo: item.tipo || '',
+          comprovantes: item.comprovantes || item.comprovante || 0,
+          desconto: item.desconto || 0,
+          observacao: item.observacao || ''
+        })) as QuebraDeCaixa[]
+      } catch {
+        localStorage.removeItem('quebras')
+      }
+    }
+    return []
+  })
+
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null)
 
   const [editingDepartmentId, setEditingDepartmentId] = useState<string | null>(null)
+
+  const [beneficios, setBeneficios] = useState<Beneficio[]>(() => {
+    const stored = localStorage.getItem('beneficios')
+    if (stored) {
+      try {
+        return JSON.parse(stored) as Beneficio[]
+      } catch {
+        localStorage.removeItem('beneficios')
+      }
+    }
+    return []
+  })
 
   useEffect(() => {
     localStorage.setItem('employees', JSON.stringify(employees))
@@ -234,6 +553,18 @@ function App() {
   }, [faltas])
 
   useEffect(() => {
+    localStorage.setItem('atrasos', JSON.stringify(atrasos))
+  }, [atrasos])
+
+  useEffect(() => {
+    localStorage.setItem('quebras', JSON.stringify(quebras))
+  }, [quebras])
+
+  useEffect(() => {
+    localStorage.setItem('beneficios', JSON.stringify(beneficios))
+  }, [beneficios])
+
+  useEffect(() => {
     localStorage.setItem('currentPage', currentPage)
     console.log('App currentPage:', currentPage)
   }, [currentPage])
@@ -249,6 +580,58 @@ function App() {
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, [currentPage]);
+
+  useEffect(() => {
+    if (!loggedUser) return
+
+    if (!canAccessPage(currentPage, loggedUser.perfil, profilePermissions)) {
+      const fallbackPage = getFirstAllowedPage(loggedUser.perfil, profilePermissions)
+      setCurrentPage(fallbackPage)
+    }
+  }, [currentPage, loggedUser, profilePermissions])
+
+  useEffect(() => {
+    if (!loggedUser) {
+      hasRenderedPageRef.current = false
+      setShowRoutePulse(false)
+      return
+    }
+
+    if (!hasRenderedPageRef.current) {
+      hasRenderedPageRef.current = true
+      return
+    }
+
+    setShowRoutePulse(true)
+    const timer = window.setTimeout(() => setShowRoutePulse(false), 700)
+
+    return () => window.clearTimeout(timer)
+  }, [currentPage, loggedUser])
+
+  useEffect(() => {
+    const updateConnectionState = () => {
+      setConnectionState(readConnectionState())
+    }
+
+    updateConnectionState()
+
+    const connection = (navigator as Navigator & {
+      connection?: {
+        addEventListener?: (type: string, listener: () => void) => void
+        removeEventListener?: (type: string, listener: () => void) => void
+      }
+    }).connection
+
+    window.addEventListener('online', updateConnectionState)
+    window.addEventListener('offline', updateConnectionState)
+    connection?.addEventListener?.('change', updateConnectionState)
+
+    return () => {
+      window.removeEventListener('online', updateConnectionState)
+      window.removeEventListener('offline', updateConnectionState)
+      connection?.removeEventListener?.('change', updateConnectionState)
+    }
+  }, [])
 
   const handleNavigate = (route: string) => {
         if (route === 'resumo-turno') {
@@ -268,6 +651,10 @@ function App() {
     }
     if (route === 'dashboard') {
       setCurrentPage('dashboard')
+      return
+    }
+    if (route.startsWith('perfil-funcionario-')) {
+      setCurrentPage(route)
       return
     }
     if (route === 'lancamento-licenca') {
@@ -340,6 +727,7 @@ function App() {
       return
     }
     if (route === 'cadastro-funcionario') {
+      setEditingEmployeeId(null) // ensure form is blank when adding new
       setCurrentPage('cadastro-funcionario')
       return
     }
@@ -361,24 +749,138 @@ function App() {
       setEditingFaltaId(urlParams.get('id'))
       return
     }
+    if (route === 'Atrasos' || route === 'atrasos') {
+      setCurrentPage('atrasos')
+      return
+    }
+    if (route === 'adicionar-atraso') {
+      setCurrentPage('adicionar-atraso')
+      return
+    }
+    if (route.startsWith('editar-atraso')) {
+      setCurrentPage('editar-atraso')
+      const urlParams = new URLSearchParams(route.split('?')[1])
+      setEditingAtrasoId(urlParams.get('id'))
+      return
+    }
+    if (route === 'Quebra de caixa' || route === 'quebra-de-caixa') {
+      setCurrentPage('quebra-de-caixa')
+      return
+    }
+    if (route === 'Ceasa' || route === 'ceasa') {
+      setCurrentPage('ceasa')
+      return
+    }
+    if (route === 'ceasa-cadastro-fornecedor') {
+      setCurrentPage('ceasa-cadastro-fornecedor')
+      return
+    }
+    if (route === 'ceasa-adicionar-compra') {
+      setCurrentPage('ceasa-adicionar-compra')
+      return
+    }
+    if (route === 'adicionar-quebra-de-caixa') {
+      setCurrentPage('adicionar-quebra-de-caixa')
+      return
+    }
+    if (route.startsWith('editar-quebra-de-caixa')) {
+      setCurrentPage('editar-quebra-de-caixa')
+      const urlParams = new URLSearchParams(route.split('?')[1])
+      setEditingQuebraId(urlParams.get('id'))
+      return
+    }
+    if (route === 'Benefícios' || route === 'beneficios') {
+      setCurrentPage('beneficios')
+      return
+    }
+    if (route === 'Feriados' || route === 'feriados') {
+      setCurrentPage('feriados')
+      return
+    }
+    if (route === 'Usuários' || route === 'usuarios') {
+      setCurrentPage('usuarios')
+      return
+    }
+    if (route === 'Administradores' || route === 'administradores') {
+      setCurrentPage('administradores')
+      return
+    }
+    if (route === 'Permissões de perfil' || route === 'Permissoes de perfil' || route === 'permissoes-perfil') {
+      setCurrentPage('permissoes-perfil')
+      return
+    }
     setCurrentPage('dashboard')
   }
 
+  const showSuccessToast = (message: string) => {
+    setToastMessage(message)
+  }
+
+  const showDeleteBlockedModal = (entityLabel: string, entityName: string, linkedEmployees: Employee[]) => {
+    setDeleteBlockedModal({
+      entityLabel,
+      entityName,
+      employees: linkedEmployees
+    })
+  }
+
+  const upsertById = <T extends { id: string }>(items: T[], item: T) => {
+    const existingIndex = items.findIndex((current) => current.id === item.id)
+    if (existingIndex === -1) {
+      return [...items, item]
+    }
+
+    const nextItems = [...items]
+    nextItems[existingIndex] = {
+      ...nextItems[existingIndex],
+      ...item
+    }
+    return nextItems
+  }
+
+  useEffect(() => {
+    if (!toastMessage) return
+
+    const timer = setTimeout(() => {
+      setToastMessage(null)
+    }, 3500)
+
+    return () => clearTimeout(timer)
+  }, [toastMessage])
+
   const handleAddEmployee = (employee: Employee) => {
-    setEmployees((prevEmployees) => [...prevEmployees, employee])
+    setEmployees((prevEmployees) => upsertById(prevEmployees, employee))
+    showSuccessToast(`Funcionario "${employee.nomeCompleto}" cadastrado com sucesso.`)
     setCurrentPage('funcionarios-ativos')
   }
 
   const handleUpdateEmployee = (updatedEmployee: Employee) => {
-    setEmployees((prevEmployees) => 
-      prevEmployees.map(e => e.id === updatedEmployee.id ? updatedEmployee : e)
-    )
+    setEmployees((prevEmployees) => {
+      const employeeIndex = prevEmployees.findIndex(e => e.id === updatedEmployee.id)
+      if (employeeIndex === -1) {
+        return prevEmployees
+      }
+
+      const nextEmployees = [...prevEmployees]
+      nextEmployees[employeeIndex] = {
+        ...prevEmployees[employeeIndex],
+        ...updatedEmployee
+      }
+
+      return nextEmployees
+    })
     setEditingEmployeeId(null)
     setCurrentPage('funcionarios-ativos')
   }
 
   const handleDeleteEmployee = (id: string) => {
+    const employeeToDelete = employees.find(e => e.id === id)
     setEmployees((prevEmployees) => prevEmployees.filter(e => e.id !== id))
+    showSuccessToast(
+      employeeToDelete
+        ? `Funcionario "${employeeToDelete.nomeCompleto}" excluido com sucesso.`
+        : 'Funcionario excluido com sucesso.'
+    )
   }
 
   const handleEditEmployee = (id: string) => {
@@ -387,7 +889,8 @@ function App() {
   }
 
   const handleAddPosition = (position: Position) => {
-    setPositions((prevPositions) => [...prevPositions, position])
+    setPositions((prevPositions) => upsertById(prevPositions, position))
+    showSuccessToast(`Cargo "${position.nome}" cadastrado com sucesso.`)
   }
 
   const handleUpdatePosition = (updatedPosition: Position) => {
@@ -402,11 +905,27 @@ function App() {
   }
 
   const handleDeletePosition = (id: string) => {
+    const positionToDelete = positions.find(p => p.id === id)
+
+    if (positionToDelete) {
+      const linkedEmployees = employees.filter(e => e.cargo === positionToDelete.nome)
+      if (linkedEmployees.length > 0) {
+        showDeleteBlockedModal('cargo', positionToDelete.nome, linkedEmployees)
+        return
+      }
+    }
+
     setPositions((prevPositions) => prevPositions.filter(p => p.id !== id))
+    showSuccessToast(
+      positionToDelete
+        ? `Cargo "${positionToDelete.nome}" excluido com sucesso.`
+        : 'Cargo excluido com sucesso.'
+    )
   }
 
   const handleAddBusinessUnit = (unit: BusinessUnit) => {
-    setBusinessUnits((prevUnits) => [...prevUnits, unit])
+    setBusinessUnits((prevUnits) => upsertById(prevUnits, unit))
+    showSuccessToast(`Loja "${unit.nomeUnidade}" cadastrada com sucesso.`)
   }
 
   const handleUpdateBusinessUnit = (updatedUnit: BusinessUnit) => {
@@ -421,11 +940,27 @@ function App() {
   }
 
   const handleDeleteBusinessUnit = (id: string) => {
+    const unitToDelete = businessUnits.find(u => u.id === id)
+
+    if (unitToDelete) {
+      const linkedEmployees = employees.filter(e => e.loja === unitToDelete.nomeUnidade)
+      if (linkedEmployees.length > 0) {
+        showDeleteBlockedModal('loja', unitToDelete.nomeUnidade, linkedEmployees)
+        return
+      }
+    }
+
     setBusinessUnits((prevUnits) => prevUnits.filter(u => u.id !== id))
+    showSuccessToast(
+      unitToDelete
+        ? `Loja "${unitToDelete.nomeUnidade}" excluida com sucesso.`
+        : 'Loja excluida com sucesso.'
+    )
   }
 
   const handleAddDepartment = (department: Department) => {
-    setDepartments((prevDepartments) => [...prevDepartments, department])
+    setDepartments((prevDepartments) => upsertById(prevDepartments, department))
+    showSuccessToast(`Departamento "${department.nome}" cadastrado com sucesso.`)
   }
 
   const handleUpdateDepartment = (updatedDepartment: Department) => {
@@ -440,7 +975,28 @@ function App() {
   }
 
   const handleDeleteDepartment = (id: string) => {
+    const departmentToDelete = departments.find(d => d.id === id)
+
+    if (departmentToDelete) {
+      const teamNamesInDepartment = new Set(
+        teams
+          .filter(t => t.departamentoNome === departmentToDelete.nome)
+          .map(t => t.nome)
+      )
+
+      const linkedEmployees = employees.filter(e => teamNamesInDepartment.has(e.equipe))
+      if (linkedEmployees.length > 0) {
+        showDeleteBlockedModal('departamento', departmentToDelete.nome, linkedEmployees)
+        return
+      }
+    }
+
     setDepartments((prevDepartments) => prevDepartments.filter(d => d.id !== id))
+    showSuccessToast(
+      departmentToDelete
+        ? `Departamento "${departmentToDelete.nome}" excluido com sucesso.`
+        : 'Departamento excluido com sucesso.'
+    )
   }
 
   const positionsWithCounts = positions.map((position) => ({
@@ -448,12 +1004,39 @@ function App() {
     totalFuncionarios: employees.filter((e) => e.cargo === position.nome).length
   }))
 
+  const syncEmployeesWithTeam = (previousTeam: Team | null, nextTeam: Team) => {
+    const previousEmployeeIds = new Set(previousTeam?.employeeIds || [])
+    const nextEmployeeIds = new Set(nextTeam.employeeIds || [])
+
+    setEmployees((prevEmployees) =>
+      prevEmployees.map((employee) => {
+        const wasLinkedToTeam = previousEmployeeIds.has(employee.id) || (previousTeam ? employee.equipe === previousTeam.nome : false)
+        const isLinkedToTeam = nextEmployeeIds.has(employee.id)
+
+        if (isLinkedToTeam) {
+          return { ...employee, equipe: nextTeam.nome }
+        }
+
+        if (wasLinkedToTeam) {
+          return { ...employee, equipe: '' }
+        }
+
+        return employee
+      })
+    )
+  }
+
   const handleAddTeam = (team: Team) => {
-    setTeams((prevTeams) => [...prevTeams, team])
+    syncEmployeesWithTeam(null, team)
+    setTeams((prevTeams) => upsertById(prevTeams, team))
+    showSuccessToast(`Equipe "${team.nome}" cadastrada com sucesso.`)
     setCurrentPage('equipes')
   }
 
   const handleUpdateTeam = (updatedTeam: Team) => {
+    const previousTeam = teams.find((team) => team.id === updatedTeam.id) || null
+
+    syncEmployeesWithTeam(previousTeam, updatedTeam)
     setTeams((prevTeams) =>
       prevTeams.map(t => t.id === updatedTeam.id ? updatedTeam : t)
     )
@@ -462,17 +1045,66 @@ function App() {
   }
 
   const handleDeleteTeam = (id: string) => {
-    // Limpar campo equipe dos funcionários
     const teamToDelete = teams.find(t => t.id === id);
+
     if (teamToDelete) {
-      setEmployees((prevEmployees) => prevEmployees.map(e =>
-        e.equipe === teamToDelete.nome ? { ...e, equipe: '' } : e
-      ));
+      const linkedEmployeeIds = new Set(teamToDelete.employeeIds || [])
+      const linkedEmployees = employees.filter((employee) =>
+        linkedEmployeeIds.has(employee.id) || employee.equipe === teamToDelete.nome
+      )
+
+      if (linkedEmployees.length > 0) {
+        showDeleteBlockedModal('equipe', teamToDelete.nome, linkedEmployees)
+        return
+      }
     }
+
     setTeams((prevTeams) => prevTeams.filter(t => t.id !== id));
+    showSuccessToast(
+      teamToDelete
+        ? `Equipe "${teamToDelete.nome}" excluida com sucesso.`
+        : 'Equipe excluida com sucesso.'
+    )
   }
 
   // ...existing code...
+
+  // Sincronizar histórico de afastamentos/licenças (FeriasEAfastamentos)
+  useEffect(() => {
+    // Sempre que houver alteração nos lançamentos de licença, registrar inclusões e exclusões
+    const lancamentosRaw = localStorage.getItem('lancamentosLicenca');
+    let lancamentos = [];
+    if (lancamentosRaw) {
+      try {
+        lancamentos = JSON.parse(lancamentosRaw);
+      } catch { lancamentos = []; }
+    }
+    // Recuperar histórico já registrado para evitar duplicidade
+    const historicoIds = new Set(historyEntries.map(h => h.id));
+    // Adicionar lançamentos que ainda não estão no histórico
+    lancamentos.forEach((lanc) => {
+      const periodo = lanc.dataTermino && lanc.dataTermino !== lanc.dataInicio
+        ? `${lanc.dataInicio} a ${lanc.dataTermino}`
+        : lanc.dataInicio;
+      const nomeFuncionario = lanc.employeeName || lanc.nome || lanc.colaboradorNome || lanc.funcionarioNome || lanc.nomeColaborador || lanc.nomeFuncionario || lanc.nome || '';
+      const id = `Cadastro-${nomeFuncionario}-${lanc.tipoLicenca || 'Licença'}-${periodo}`;
+      if (!Array.from(historicoIds).some(hid => hid.startsWith(id))) {
+        registrarHistoricoLicenca({
+          acao: `Cadastrou ${lanc.tipoLicenca || 'Licença'}`,
+          usuario: loggedUser?.nome,
+          funcionarioNome: nomeFuncionario ? `para ${nomeFuncionario}` : '',
+          tipoLicenca: lanc.tipoLicenca || 'Licença',
+          dataInicio: lanc.dataInicio,
+          dataTermino: lanc.dataTermino,
+          detalhes: lanc.observacao ? `Obs: ${lanc.observacao}` : undefined,
+          setHistoryEntries,
+        });
+      }
+    });
+    // Remover do histórico se o lançamento foi excluído (opcional: manter registro de exclusão)
+    // Se quiser registrar exclusão, pode comparar com um snapshot anterior
+    // Aqui, só adiciona inclusões
+  }, [localStorage.getItem('lancamentosLicenca')]);
 
   const handleEditTeam = (id: string) => {
     setEditingTeamId(id)
@@ -480,9 +1112,48 @@ function App() {
   }
 
   const handleAddFalta = (falta: Falta) => {
-    setFaltas((prevFaltas) => [...prevFaltas, falta])
-    setCurrentPage('faltas')
-  }
+    setFaltas((prevFaltas) => upsertById(prevFaltas, falta));
+    setHistoryEntries((prev) => [
+      {
+        id: 'falta-' + falta.id,
+        usuario: loggedUser?.nome || 'Usuário',
+        acao: 'Adicionou falta',
+        alvo: falta.funcionarioNome ? `para ${falta.funcionarioNome.replace(/^para /, '')}` : '',
+        tipo: 'falta',
+        dataRegistro: new Date().toISOString(),
+        dataEvento: falta.data,
+        detalhes: falta.motivo ? `Motivo: ${falta.motivo}` : undefined,
+      },
+      ...prev
+    ]);
+    showSuccessToast('Registro de falta cadastrado com sucesso.');
+    setCurrentPage('faltas');
+  };
+
+  const handleDeleteFalta = (id: string) => {
+    const faltaToDelete = faltas.find(f => f.id === id);
+    setFaltas((prev) => prev.filter(f => f.id !== id));
+    if (faltaToDelete) {
+      setHistoryEntries((prev) => [
+        {
+          id: 'falta-del-' + faltaToDelete.id,
+          usuario: loggedUser?.nome || 'Usuário',
+          acao: 'Excluiu falta',
+          alvo: faltaToDelete.funcionarioNome ? `para ${faltaToDelete.funcionarioNome.replace(/^para /, '')}` : '',
+          tipo: 'falta',
+          dataRegistro: new Date().toISOString(),
+          dataEvento: faltaToDelete.data,
+          detalhes: faltaToDelete.motivo ? `Motivo: ${faltaToDelete.motivo}` : undefined,
+        },
+        ...prev
+      ]);
+    }
+    showSuccessToast(
+      faltaToDelete
+        ? `Falta de "${faltaToDelete.funcionarioNome}" excluida com sucesso.`
+        : 'Falta excluida com sucesso.'
+    );
+  };
 
   const handleUpdateFalta = (updatedFalta: Falta) => {
     setFaltas((prevFaltas) =>
@@ -492,34 +1163,296 @@ function App() {
     setCurrentPage('faltas')
   }
 
+  const handleAddAtraso = (atraso: Atraso) => {
+    setAtrasos((prev) => upsertById(prev, atraso));
+    setHistoryEntries((prev) => [
+      {
+        id: 'atraso-' + atraso.id,
+        usuario: loggedUser?.nome || 'Usuário',
+        acao: 'Adicionou atraso',
+        alvo: atraso.funcionarioNome ? `para ${atraso.funcionarioNome.replace(/^para /, '')}` : '',
+        tipo: 'atraso',
+        dataRegistro: new Date().toISOString(),
+        dataEvento: atraso.data,
+        detalhes: atraso.motivo ? `Motivo: ${atraso.motivo}` : undefined,
+      },
+      ...prev
+    ]);
+    showSuccessToast('Registro de atraso cadastrado com sucesso.');
+    setCurrentPage('atrasos');
+  };
+
+  const handleDeleteAtraso = (id: string) => {
+    const atrasoToDelete = atrasos.find(a => a.id === id);
+    setAtrasos((prev) => prev.filter(a => a.id !== id));
+    if (atrasoToDelete) {
+      setHistoryEntries((prev) => [
+        {
+          id: 'atraso-del-' + atrasoToDelete.id,
+          usuario: loggedUser?.nome || 'Usuário',
+          acao: 'Excluiu atraso',
+          alvo: atrasoToDelete.funcionarioNome ? `para ${atrasoToDelete.funcionarioNome.replace(/^para /, '')}` : '',
+          tipo: 'atraso',
+          dataRegistro: new Date().toISOString(),
+          dataEvento: atrasoToDelete.data,
+          detalhes: atrasoToDelete.motivo ? `Motivo: ${atrasoToDelete.motivo}` : undefined,
+        },
+        ...prev
+      ]);
+    }
+    showSuccessToast(
+      atrasoToDelete
+        ? `Atraso de "${atrasoToDelete.funcionarioNome}" excluido com sucesso.`
+        : 'Atraso excluido com sucesso.'
+    );
+  };
+
+  const handleUpdateAtraso = (updated: Atraso) => {
+    setAtrasos((prev) =>
+      prev.map(a => a.id === updated.id ? updated : a)
+    )
+    setEditingAtrasoId(null)
+    setCurrentPage('atrasos')
+  }
+
+  const handleAddQuebra = (quebra: QuebraDeCaixa) => {
+    setQuebras((prev) => upsertById(prev, quebra));
+    setHistoryEntries((prev) => [
+      {
+        id: 'quebra-' + quebra.id,
+        usuario: loggedUser?.nome || 'Usuário',
+        acao: 'Adicionou quebra de caixa',
+        alvo: quebra.funcionarioNome ? `para ${quebra.funcionarioNome.replace(/^para /, '')}` : '',
+        tipo: 'outro',
+        dataRegistro: new Date().toISOString(),
+        dataEvento: quebra.data,
+        detalhes: quebra.formaPagamento ? `Forma de pagamento: ${quebra.formaPagamento}` : undefined,
+      },
+      ...prev
+    ]);
+    showSuccessToast('Registro de quebra de caixa cadastrado com sucesso.');
+    setCurrentPage('quebra-de-caixa');
+  };
+
+  const handleDeleteQuebra = (id: string) => {
+    const quebraToDelete = quebras.find(q => q.id === id);
+    setQuebras((prev) => prev.filter(q => q.id !== id));
+    if (quebraToDelete) {
+      setHistoryEntries((prev) => [
+        {
+          id: 'quebra-del-' + quebraToDelete.id,
+          usuario: loggedUser?.nome || 'Usuário',
+          acao: 'Excluiu quebra de caixa',
+          alvo: quebraToDelete.funcionarioNome ? `para ${quebraToDelete.funcionarioNome.replace(/^para /, '')}` : '',
+          tipo: 'outro',
+          dataRegistro: new Date().toISOString(),
+          dataEvento: quebraToDelete.data,
+          detalhes: quebraToDelete.formaPagamento ? `Forma de pagamento: ${quebraToDelete.formaPagamento}` : undefined,
+        },
+        ...prev
+      ]);
+    }
+    showSuccessToast(
+      quebraToDelete
+        ? `Quebra de caixa de "${quebraToDelete.funcionarioNome}" excluida com sucesso.`
+        : 'Quebra de caixa excluida com sucesso.'
+    );
+  };
+
+  const handleUpdateQuebra = (updated: QuebraDeCaixa) => {
+    setQuebras((prev) =>
+      prev.map(q => q.id === updated.id ? updated : q)
+    )
+    setEditingQuebraId(null)
+    setCurrentPage('quebra-de-caixa')
+  }
+
+  const handleAddBeneficio = (beneficio: Beneficio) => {
+    setBeneficios((prev) => upsertById(prev, beneficio))
+    showSuccessToast(`Benefício "${beneficio.nome}" cadastrado com sucesso.`)
+  }
+
+  const handleUpdateBeneficio = (updated: Beneficio) => {
+    setBeneficios((prev) => prev.map(b => b.id === updated.id ? updated : b))
+    showSuccessToast(`Benefício "${updated.nome}" atualizado com sucesso.`)
+  }
+
+  const handleDeleteBeneficio = (id: string) => {
+    const item = beneficios.find(b => b.id === id)
+    setBeneficios((prev) => prev.filter(b => b.id !== id))
+    showSuccessToast(
+      item ? `Benefício "${item.nome}" excluído com sucesso.` : 'Benefício excluído com sucesso.'
+    )
+  }
+
+  const handleToggleBeneficio = (id: string) => {
+    setBeneficios((prev) =>
+      prev.map(b => b.id === id ? { ...b, ativo: !b.ativo } : b)
+    )
+  }
+
+  const handleGlobalEnterNavigation = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.defaultPrevented || event.key !== 'Enter') return
+
+    const target = event.target as HTMLElement | null
+    if (!target) return
+
+    if (target instanceof HTMLTextAreaElement) return
+    if (target instanceof HTMLButtonElement) return
+
+    if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement)) return
+
+    if (target instanceof HTMLInputElement) {
+      const blockedTypes = new Set(['button', 'submit', 'reset', 'checkbox', 'radio', 'file'])
+      if (blockedTypes.has(target.type)) return
+    }
+
+    const root = target.closest('form, [role="dialog"], main, body') ?? document
+    const focusableElements = Array.from(
+      root.querySelectorAll<HTMLElement>(
+        'input:not([disabled]):not([type="hidden"]), button:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((element) => {
+      if (element === target) return true
+      return element.offsetParent !== null
+    })
+
+    const currentIndex = focusableElements.indexOf(target)
+    if (currentIndex === -1) return
+
+    const next = focusableElements.slice(currentIndex + 1).find((element) => !element.hasAttribute('disabled'))
+    if (!next) return
+
+    event.preventDefault()
+    setTimeout(() => next.focus(), 0)
+  }
+
+  if (!loggedUser) {
+    return <Login onLogin={handleLogin} />
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" onKeyDownCapture={handleGlobalEnterNavigation}>
+      <SystemMotionFeedback showRoutePulse={showRoutePulse} connectionState={connectionState} />
+      {deleteBlockedModal && (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm px-4">
+          <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
+            <div className="flex items-start justify-between border-b border-gray-100 px-6 py-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                  <AlertTriangle size={20} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Exclusao bloqueada</h2>
+                  <p className="text-sm text-gray-600">
+                    Nao foi possivel excluir o(a) {deleteBlockedModal.entityLabel} "{deleteBlockedModal.entityName}" porque ha funcionario(s) vinculado(s).
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setDeleteBlockedModal(null)}
+                className="rounded-md px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                aria-label="Fechar"
+              >
+                Fechar
+              </button>
+            </div>
+
+            <div className="px-6 py-5">
+              <p className="mb-3 text-sm font-medium text-gray-800">
+                Funcionarios vinculados ({deleteBlockedModal.employees.length})
+              </p>
+
+              <div className="max-h-72 overflow-y-auto rounded-lg border border-gray-200">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-left text-gray-600">
+                    <tr>
+                      <th className="px-3 py-2 font-medium">Matricula</th>
+                      <th className="px-3 py-2 font-medium">Nome</th>
+                      <th className="px-3 py-2 font-medium">Cargo</th>
+                      <th className="px-3 py-2 font-medium">Equipe</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deleteBlockedModal.employees.map((employee) => (
+                      <tr key={employee.id} className="border-t border-gray-100">
+                        <td className="px-3 py-2 text-gray-700">{employee.matricula || '-'}</td>
+                        <td className="px-3 py-2 text-gray-900">{employee.nomeCompleto}</td>
+                        <td className="px-3 py-2 text-gray-700">{employee.cargo || '-'}</td>
+                        <td className="px-3 py-2 text-gray-700">{employee.equipe || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toastMessage && (
+        <div className="fixed right-5 top-5 z-[90] w-full max-w-sm animate-fadeIn">
+          <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 shadow-lg">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-green-800">Operacao concluida</p>
+                <p className="text-sm text-green-700">{toastMessage}</p>
+              </div>
+              <button
+                onClick={() => setToastMessage(null)}
+                className="rounded p-1 text-green-700 hover:bg-green-100"
+                aria-label="Fechar notificacao"
+              >
+                X
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Sidebar
         isOpen={menuOpen}
         onClose={() => setMenuOpen(false)}
         onNavigate={handleNavigate}
+        canAccessRoute={canAccessRouteForCurrentUser}
       />
       
       <div>
-        <Header onMenuClick={() => setMenuOpen(!menuOpen)} />
-        
+        <Header onMenuClick={() => setMenuOpen(!menuOpen)} loggedUser={loggedUser} onLogout={handleLogout} />
+
+        {/* Navigation Tabs fixo no topo do dashboard */}
+        {currentPage === 'dashboard' && (
+          <div className="w-full bg-white border-b shadow-sm z-20 sticky top-0 left-0">
+            <div className="container mx-auto px-4">
+              <div className="flex justify-center gap-8 border-b">
+                <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+              </div>
+            </div>
+          </div>
+        )}
+
         {currentPage === 'dashboard' && (
           <div className="container mx-auto px-4 py-8">
-            {/* Navigation Tabs */}
-            <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
-
             {/* Promo Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               <PromoCards />
             </div>
 
-            {/* Status and Tasks */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <StatusCard />
-              <PendingTasks />
-            </div>
+            {/* Status, Tasks e Histórico */}
+            {activeTab === 'controle' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <StatusCard />
+                <PendingTasks />
+              </div>
+            )}
+            {activeTab === 'historico' && (
+              <div className="mt-6">
+                <HistoryList entries={historyEntries} />
+              </div>
+            )}
           </div>
         )}
+
 
         {currentPage === 'funcionarios-ativos' && (
           <ActiveEmployees 
@@ -529,6 +1462,12 @@ function App() {
             onEditEmployee={handleEditEmployee}
           />
         )}
+        {/* Perfil do funcionário */}
+        {currentPage.startsWith('perfil-funcionario-') && (() => {
+          const id = currentPage.replace('perfil-funcionario-', '');
+          const funcionario = employees.find(e => e.id === id) || null;
+          return <PerfilFuncionario funcionario={funcionario} />;
+        })()}
         <SwitchTransition mode="out-in">
           <CSSTransition
             key={currentPage}
@@ -561,6 +1500,7 @@ function App() {
             onUpdateEmployee={handleUpdateEmployee}
             editingEmployee={editingEmployeeId ? employees.find(e => e.id === editingEmployeeId) || null : null}
             businessUnits={businessUnits}
+            employees={employees}
           />
         )}
         {currentPage === 'aniversariantes' && <Birthdays employees={employees} />}
@@ -586,6 +1526,7 @@ function App() {
             employees={employees}
             departments={departments}
             businessUnits={businessUnits}
+            onBack={() => handleNavigate('equipes')}
           />
         )}
         {currentPage === 'cadastro-departamento' && (
@@ -658,6 +1599,7 @@ function App() {
               handleNavigate(route)
             }}
             departments={departments}
+            businessUnits={businessUnits}
             employees={employees}
             onAddTeam={handleAddTeam}
             onUpdateTeam={handleUpdateTeam}
@@ -671,8 +1613,9 @@ function App() {
             positions={positions}
             departments={departments}
             teams={teams}
+            businessUnits={businessUnits}
             onNavigate={handleNavigate}
-            onDeleteFalta={(id) => setFaltas((prev) => prev.filter(f => f.id !== id))}
+            onDeleteFalta={handleDeleteFalta}
           />
         )}
         {currentPage === 'adicionar-falta' && (
@@ -691,7 +1634,101 @@ function App() {
             editingFalta={editingFaltaId ? faltas.find(f => f.id === editingFaltaId) || null : null}
           />
         )}
-      </div>
+        {currentPage === 'atrasos' && (
+          <Atrasos
+            employees={employees}
+            atrasos={atrasos}
+            positions={positions}
+            departments={departments}
+            teams={teams}
+            businessUnits={businessUnits}
+            onNavigate={handleNavigate}
+            onDeleteAtraso={handleDeleteAtraso}
+          />
+        )}
+        {currentPage === 'adicionar-atraso' && (
+          <AdicionarAtraso
+            onNavigate={handleNavigate}
+            onAddAtraso={handleAddAtraso}
+            employees={employees}
+          />
+        )}
+        {currentPage === 'editar-atraso' && (
+          <AdicionarAtraso
+            onNavigate={handleNavigate}
+            onAddAtraso={handleAddAtraso}
+            onUpdateAtraso={handleUpdateAtraso}
+            employees={employees}
+            editingAtraso={editingAtrasoId ? atrasos.find(a => a.id === editingAtrasoId) || null : null}
+          />
+        )}
+        {currentPage === 'quebra-de-caixa' && (
+          <QuebraDeCaixa
+            employees={employees}
+            quebras={quebras}
+            positions={positions}
+            departments={departments}
+            teams={teams}
+            businessUnits={businessUnits}
+            onNavigate={handleNavigate}
+            onDeleteQuebra={handleDeleteQuebra}
+          />
+        )}
+        {currentPage === 'ceasa' && (
+          <CeasaAnalytics
+            businessUnits={businessUnits}
+            onNavigate={handleNavigate}
+          />
+        )}
+        {currentPage === 'ceasa-cadastro-fornecedor' && (
+          <CeasaSupplierCreate onNavigate={handleNavigate} />
+        )}
+        {currentPage === 'ceasa-adicionar-compra' && (
+          <CeasaPurchaseCreate
+            onNavigate={handleNavigate}
+            businessUnits={businessUnits}
+          />
+        )}
+        {currentPage === 'adicionar-quebra-de-caixa' && (
+          <AdicionarQuebraDeCaixa
+            onNavigate={handleNavigate}
+            onAddQuebra={handleAddQuebra}
+            employees={employees}
+          />
+        )}
+        {currentPage === 'editar-quebra-de-caixa' && (
+          <AdicionarQuebraDeCaixa
+            onNavigate={handleNavigate}
+            onAddQuebra={handleAddQuebra}
+            onUpdateQuebra={handleUpdateQuebra}
+            employees={employees}
+            editingQuebra={editingQuebraId ? quebras.find(q => q.id === editingQuebraId) || null : null}
+          />
+        )}
+        {currentPage === 'beneficios' && (
+          <Beneficios
+            beneficios={beneficios}
+            onAddBeneficio={handleAddBeneficio}
+            onUpdateBeneficio={handleUpdateBeneficio}
+            onDeleteBeneficio={handleDeleteBeneficio}
+            onToggleBeneficio={handleToggleBeneficio}
+          />
+        )}
+        {currentPage === 'feriados' && (
+          <Feriados />
+        )}
+        {currentPage === 'usuarios' && (
+          <Usuarios mode="usuarios" loggedUser={loggedUser as LoggedUser | null} setLoggedUser={setLoggedUser as (user: LoggedUser) => void} />
+        )}
+        {currentPage === 'administradores' && (
+          <Administradores loggedUser={loggedUser as LoggedUser | null} setLoggedUser={setLoggedUser as (user: LoggedUser) => void} />
+        )}
+        {currentPage === 'permissoes-perfil' && loggedUser?.perfil === 'admin' && (
+          <PermissoesPerfis
+            permissions={profilePermissions}
+            onSave={handleSaveProfilePermissions}
+          />
+        )}      </div>
     {/* Estilos da transição */}
     <style>{`
       .fade-slide-enter {

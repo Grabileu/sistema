@@ -130,9 +130,13 @@ const LancamentoLicenca = () => {
       // Limpa seleção e estado
       localStorage.removeItem('licencaSelecionada');
       localStorage.removeItem('licencaShowAll');
+      localStorage.removeItem('tipoLancamento');
+      localStorage.removeItem('colaboradorSelecionadoId');
+      localStorage.removeItem('colaboradorSelecionadoNome');
+      localStorage.removeItem('licencaEdicaoId');
       setSelectedIdx(null);
       setShowAll(false);
-      setSearch("");
+      setInputSearch("");
       localStorage.setItem('currentPage', 'ferias-e-afastamentos');
       window.dispatchEvent(new Event('storage'));
     };
@@ -148,7 +152,7 @@ const LancamentoLicenca = () => {
     const savedShowAll = localStorage.getItem('licencaShowAll');
     return savedShowAll === 'true';
   });
-  const [search, setSearch] = useState("");
+  const [inputSearch, setInputSearch] = useState("");
   const [etapa, setEtapa] = useState(1);
 
   // Avançar etapa
@@ -170,7 +174,7 @@ const LancamentoLicenca = () => {
         <div className="bg-white rounded-xl shadow p-8 mb-6">
           <h1 className="text-2xl font-bold flex items-center gap-2 mb-1">
             <span className="inline-block text-blue-600 mr-2">
-              <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" stroke="#2563eb" strokeWidth="2"/><path d="M8 8h8v8H8z" stroke="#2563eb" strokeWidth="2"/></svg>
+              <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M9 3h6a1 1 0 011 1v1h2a2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h2V4a1 1 0 011-1z" stroke="#2563eb" strokeWidth="2"/><path d="M9 5h6" stroke="#2563eb" strokeWidth="2"/><path d="M9 12l2 2 4-4" stroke="#2563eb" strokeWidth="2"/></svg>
             </span>
             Lançamento de licença
           </h1>
@@ -192,27 +196,29 @@ const LancamentoLicenca = () => {
           {/* Etapa 4 inativa */}
           <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold bg-gray-300 text-gray-600">4</div>
         </div>
+
         {/* Campo de busca */}
         <div className="flex justify-center mb-8">
-          <div className="relative w-[320px]">
+          <div className="w-[420px]">
+            <div className="relative flex-1">
             <input
               type="text"
               placeholder="Pesquisar"
               className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm"
-              value={search}
+              value={inputSearch}
               onChange={e => {
-                setSearch(e.target.value);
-                setShowAll(true);
+                setInputSearch(e.target.value);
               }}
             />
             <span className="absolute right-3 top-2.5 text-gray-400">
               <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="#6b7280" strokeWidth="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
             </span>
+            </div>
           </div>
         </div>
         {/* Cards de licença */}
         <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 justify-center">
-          {((search.trim() ? licencas.filter(l => l.nome.toLowerCase().includes(search.toLowerCase())) : (showAll ? licencas : licencas.slice(0, 5))).map((item, idx) => {
+          {((inputSearch.trim() ? licencas.filter(l => l.nome.toLowerCase().includes(inputSearch.toLowerCase())) : (showAll ? licencas : licencas.slice(0, 5))).map((item, idx) => {
             // Para manter seleção correta ao filtrar
             const realIdx = licencas.findIndex(l => l.nome === item.nome);
             return (

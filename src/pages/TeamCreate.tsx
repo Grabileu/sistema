@@ -1,33 +1,44 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { Search, ChevronRight, ChevronLeft, Eye } from 'lucide-react'
 import Select from '../components/Select'
-import { Department, Team, Employee } from '../App'
+import { Department, Team, Employee, BusinessUnit } from '../App'
+import { focusNext, handleKeyDown } from '../utils/formatters'
 
 interface TeamCreateProps {
   onNavigate?: (route: string) => void
   departments: Department[]
+  businessUnits?: BusinessUnit[]
   employees: Employee[]
   onAddTeam?: (team: Team) => void
   onUpdateTeam?: (team: Team) => void
   editingTeam?: Team | null
 }
 
-const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employees, onAddTeam, onUpdateTeam, editingTeam }) => {
+const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, businessUnits = [], employees, onAddTeam, onUpdateTeam, editingTeam }) => {
   const [currentStep, setCurrentStep] = useState(1)
+  const nomeRef = useRef<HTMLInputElement>(null)
+  const lojaRef = useRef<HTMLButtonElement>(null)
+  const departamentoRef = useRef<HTMLButtonElement>(null)
+  const observacaoRef = useRef<HTMLTextAreaElement>(null)
+  const continueButtonRef = useRef<HTMLButtonElement>(null)
   const [filterLeft, setFilterLeft] = useState('funcionario')
   const [filterRight, setFilterRight] = useState('funcionario')
+  const [searchLeft, setSearchLeft] = useState('')
+  const [searchRight, setSearchRight] = useState('')
   const [selectedAvailableIds, setSelectedAvailableIds] = useState<string[]>([])
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([])
   const [teamEmployeeIds, setTeamEmployeeIds] = useState<string[]>([])
   const [formData, setFormData] = useState({
     nome: '',
     codigo: '',
+    lojaId: '',
     departamentoId: '',
     observacao: ''
   })
   const [errors, setErrors] = useState({
     nome: false,
     codigo: false,
+    lojaId: false,
     departamentoId: false
   })
 
@@ -52,13 +63,20 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
   const filterOptions = [
     { label: 'Funcionário', value: 'funcionario' },
     { label: 'Departamento', value: 'departamento' },
-    { label: 'Cargo', value: 'cargo' },
-    { label: 'Equipe', value: 'equipe' }
+    { label: 'Cargo', value: 'cargo' }
   ]
 
+  const filterLabel = (filter: string) => {
+    if (filter === 'departamento') return 'Pesquisar por departamento'
+    if (filter === 'cargo') return 'Pesquisar por cargo'
+    return 'Pesquisar por funcionário'
+  }
   // Impede adicionar funcionário que já tem equipe
-  const availableEmployees = employees.filter((e) => !teamEmployeeIds.includes(e.id) && (!e.equipe || (editingTeam && e.equipe === editingTeam.nome)))
-  const teamEmployees = employees.filter((e) => teamEmployeeIds.includes(e.id))
+  const availableEmployeesBase = employees.filter((employee) => {
+    if (teamEmployeeIds.includes(employee.id)) return false
+    return !employee.equipe || employee.equipe.trim() === ''
+  })
+  const teamEmployeesBase = employees.filter((e) => teamEmployeeIds.includes(e.id))
 
   const toggleAvailable = (id: string) => {
     setSelectedAvailableIds((prev) =>
@@ -96,6 +114,69 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
     ...departments.map((d) => ({ label: d.nome, value: d.id }))
   ]
 
+  const storeOptions = React.useMemo(() => {
+    const options: Array<{ label: string; value: string }> = [{ label: 'Selecione', value: '' }]
+    const companyDataStr = localStorage.getItem('companyData')
+
+    if (companyDataStr) {
+      try {
+        const companyData = JSON.parse(companyDataStr)
+        const companyName = companyData.nomeEmpresa || companyData.razaoSocial || 'Empresa Principal'
+        options.push({ label: `${companyName} (Principal)`, value: 'company-main' })
+      } catch {}
+    }
+
+    businessUnits.forEach((unit) => {
+      const label = unit.unidadePrincipal ? `${unit.nomeUnidade} (Principal)` : unit.nomeUnidade
+      options.push({ label, value: unit.id })
+    })
+
+    return options
+  }, [businessUnits])
+
+  const standardFieldClass = 'w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-900 placeholder-gray-500'
+
+  const selectedDepartmentName = departments.find((department) => department.id === formData.departamentoId)?.nome || ''
+  const selectedStoreName = storeOptions.find((store) => store.value === formData.lojaId)?.label?.replace(' (Principal)', '') || ''
+
+  const getEmployeeDepartmentName = (employee: Employee) => {
+    if (selectedDepartmentName) {
+      return selectedDepartmentName
+    }
+
+    if (!employee.equipe) {
+      return '-'
+    }
+
+    try {
+      const storedTeams = localStorage.getItem('teams')
+      if (!storedTeams) {
+        return '-'
+      }
+
+      const teams = JSON.parse(storedTeams) as Team[]
+      const employeeTeam = teams.find((team) => team.nome === employee.equipe)
+      if (!employeeTeam) {
+        return '-'
+      }
+
+      return employeeTeam.departamentoNome || departments.find((department) => department.id === employeeTeam.departamentoId)?.nome || '-'
+    } catch {
+      return '-'
+    }
+  }
+
+  const matchesSearch = (employee: any, filter: string, query: string) => {
+    if (!query.trim()) return true
+    const q = query.trim().toLowerCase()
+    if (filter === 'departamento') return (getEmployeeDepartmentName(employee) || '').toLowerCase().includes(q)
+    if (filter === 'cargo') return (employee.cargo || '').toLowerCase().includes(q)
+    return (employee.nomeCompleto || '').toLowerCase().includes(q)
+  }
+
+  const availableEmployees = availableEmployeesBase.filter(e => matchesSearch(e, filterLeft, searchLeft))
+  const teamEmployees = teamEmployeesBase.filter(e => matchesSearch(e, filterRight, searchRight))
+
   const getNextCode = () => {
     const storedTeams = localStorage.getItem('teams')
     if (!storedTeams) {
@@ -118,6 +199,7 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
       setFormData({
         nome: editingTeam.nome,
         codigo: editingTeam.codigo,
+        lojaId: editingTeam.lojaId || '',
         departamentoId: editingTeam.departamentoId,
         observacao: editingTeam.observacao || ''
       })
@@ -143,6 +225,8 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
       id: editingTeam?.id || Date.now().toString(),
       codigo: formData.codigo,
       nome: formData.nome,
+      lojaId: formData.lojaId,
+      lojaNome: selectedStoreName,
       departamentoId: formData.departamentoId,
       departamentoNome: department?.nome || '',
       observacao: formData.observacao,
@@ -159,11 +243,12 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
       const newErrors = {
         nome: !formData.nome.trim(),
         codigo: !formData.codigo.trim(),
+        lojaId: !formData.lojaId,
         departamentoId: !formData.departamentoId
       }
       setErrors(newErrors)
 
-      if (newErrors.nome || newErrors.codigo || newErrors.departamentoId) {
+      if (newErrors.nome || newErrors.codigo || newErrors.lojaId || newErrors.departamentoId) {
         return
       }
 
@@ -178,14 +263,6 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
 
     if (currentStep === 3) {
       const teamObj = buildTeam();
-      // Atualiza o campo 'equipe' dos funcionários
-      teamEmployeeIds.forEach(id => {
-        const idx = employees.findIndex(e => e.id === id);
-        if (idx !== -1) {
-          employees[idx] = { ...employees[idx], equipe: teamObj.nome };
-        }
-      });
-      localStorage.setItem('employees', JSON.stringify(employees));
       if (editingTeam) {
         onUpdateTeam?.(teamObj)
       } else {
@@ -216,11 +293,11 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
                 let isVisited = editingTeam || item.step <= currentStep;
                 // Libera o clique em Gestores assim que todos os campos obrigatórios da etapa 1 estiverem preenchidos
                 if (!editingTeam && item.step === 2) {
-                  isVisited = Boolean(formData.nome.trim()) && Boolean(formData.codigo.trim()) && Boolean(formData.departamentoId);
+                  isVisited = Boolean(formData.nome.trim()) && Boolean(formData.codigo.trim()) && Boolean(formData.lojaId) && Boolean(formData.departamentoId);
                 }
                 // Para Funcionários, libera se todos os campos obrigatórios da etapa 1 estiverem preenchidos
                 if (!editingTeam && item.step === 3) {
-                  isVisited = Boolean(formData.nome.trim()) && Boolean(formData.codigo.trim()) && Boolean(formData.departamentoId);
+                  isVisited = Boolean(formData.nome.trim()) && Boolean(formData.codigo.trim()) && Boolean(formData.lojaId) && Boolean(formData.departamentoId);
                 }
                 return (
                   <button
@@ -260,7 +337,7 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
                 <p className="text-sm text-gray-500 mt-1">Configure as informações da equipe</p>
 
                 <div className="border-t mt-4 pt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div>
                       <label className="block text-gray-700 text-sm mb-2">
                         Código <span className="text-red-500">*</span>
@@ -270,7 +347,7 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
                         value={formData.codigo}
                         disabled
                         placeholder="01"
-                        className={`w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 cursor-not-allowed opacity-70 ${errors.codigo ? 'ring-1 ring-red-500' : ''}`}
+                        className={`${standardFieldClass} bg-gray-200 cursor-not-allowed disabled:cursor-not-allowed opacity-70 ${errors.codigo ? 'ring-1 ring-red-500' : ''}`}
                       />
                     </div>
 
@@ -279,17 +356,39 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
                         Nome <span className="text-red-500">*</span>
                       </label>
                       <input
+                        ref={nomeRef}
                         type="text"
                         value={formData.nome}
                         onChange={(e) => {
                           setFormData({ ...formData, nome: e.target.value })
                           if (errors.nome) setErrors({ ...errors, nome: false })
                         }}
+                        onKeyDown={(event) => handleKeyDown(event, lojaRef)}
                         placeholder="Digite"
-                        className={`w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 ${errors.nome ? 'ring-1 ring-red-500' : ''}`}
+                        className={`${standardFieldClass} ${errors.nome ? 'ring-1 ring-red-500' : ''}`}
                       />
                       {errors.nome && (
                         <p className="text-xs text-red-500 mt-1">Preencha o nome da equipe</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-700 text-sm mb-2">
+                        Loja <span className="text-red-500">*</span>
+                      </label>
+                      <Select
+                        value={formData.lojaId}
+                        onChange={(value) => {
+                          setFormData({ ...formData, lojaId: String(value) })
+                          if (errors.lojaId) setErrors({ ...errors, lojaId: false })
+                        }}
+                        buttonRef={lojaRef}
+                        nextRef={departamentoRef}
+                        options={storeOptions}
+                        buttonClassName={`${standardFieldClass} text-left`}
+                      />
+                      {errors.lojaId && (
+                        <p className="text-xs text-red-500 mt-1">Selecione uma loja</p>
                       )}
                     </div>
 
@@ -303,7 +402,10 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
                           setFormData({ ...formData, departamentoId: String(value) })
                           if (errors.departamentoId) setErrors({ ...errors, departamentoId: false })
                         }}
+                        buttonRef={departamentoRef}
+                        nextRef={observacaoRef}
                         options={departmentOptions}
+                        buttonClassName={`${standardFieldClass} text-left`}
                       />
                       {errors.departamentoId && (
                         <p className="text-xs text-red-500 mt-1">Selecione um departamento</p>
@@ -314,10 +416,13 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
                   <div className="mt-6">
                     <label className="block text-gray-700 text-sm mb-2">Observação</label>
                     <textarea
+                      ref={observacaoRef}
                       value={formData.observacao}
                       onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
+                      onKeyDown={(event) => handleKeyDown(event, continueButtonRef)}
                       placeholder="Digite"
-                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 h-28"
+                      rows={4}
+                      className={`${standardFieldClass} resize-none`}
                     />
                   </div>
                 </div>
@@ -333,6 +438,7 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
                   <button
                     type="button"
                     onClick={handleContinue}
+                    ref={continueButtonRef}
                     className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded font-medium"
                   >
                     Continuar
@@ -357,7 +463,7 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
                         placeholder="Comece digitando o nome"
                         value={gestorSearch}
                         onChange={e => setGestorSearch(e.target.value)}
-                        className="w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-100"
                       />
                       <Search size={16} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                       {gestorSearch && filteredGestores.length > 0 && (
@@ -449,25 +555,27 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
                               <div className="mt-1">
                                 <Select
                                   value={filterLeft}
-                                  onChange={(value) => setFilterLeft(String(value))}
+                                  onChange={(value) => { setFilterLeft(String(value)); setSearchLeft('') }}
                                   options={filterOptions}
                                 />
                               </div>
                             </div>
                             <div>
-                              <label className="text-xs text-gray-500">Pesquisar por funcionário</label>
+                              <label className="text-xs text-gray-500">{filterLabel(filterLeft)}</label>
                               <div className="relative mt-1">
                                 <input
                                   type="text"
                                   placeholder="Digite..."
-                                  className="w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  value={searchLeft}
+                                  onChange={(e) => setSearchLeft(e.target.value)}
+                                  className="w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-100"
                                 />
                                 <Search size={16} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                               </div>
                             </div>
                           </div>
                           <div className="text-xs text-gray-500 mt-3 text-right">
-                            Exibindo {availableEmployees.length} de {employees.length} funcionários
+                            Exibindo {availableEmployees.length} de {availableEmployeesBase.length} funcionários
                           </div>
                         </div>
 
@@ -493,8 +601,7 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
                                   <Eye size={16} className="text-gray-500" />
                                 </div>
                                 <div className="mt-2 text-xs text-gray-600 space-y-1">
-                                  <div>Departamento: -</div>
-                                  <div>Equipe: {employee.equipe && employee.equipe !== '' ? employee.equipe : '-'}</div>
+                                  <div>Departamento: {getEmployeeDepartmentName(employee)}</div>
                                   <div>Cargo: {employee.cargo || '-'}</div>
                                 </div>
                               </button>
@@ -535,18 +642,20 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
                               <div className="mt-1">
                                 <Select
                                   value={filterRight}
-                                  onChange={(value) => setFilterRight(String(value))}
+                                  onChange={(value) => { setFilterRight(String(value)); setSearchRight('') }}
                                   options={filterOptions}
                                 />
                               </div>
                             </div>
                             <div>
-                              <label className="text-xs text-gray-500">Pesquisar por funcionário</label>
+                              <label className="text-xs text-gray-500">{filterLabel(filterRight)}</label>
                               <div className="relative mt-1">
                                 <input
                                   type="text"
-                                  placeholder="Procurando por funcionário"
-                                  className="w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  placeholder="Digite..."
+                                  value={searchRight}
+                                  onChange={(e) => setSearchRight(e.target.value)}
+                                  className="w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-100"
                                 />
                                 <Search size={16} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                               </div>
@@ -575,8 +684,7 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, employ
                                   <Eye size={16} className="text-gray-500" />
                                 </div>
                                 <div className="mt-2 text-xs text-gray-600 space-y-1">
-                                  <div>Departamento: -</div>
-                                  <div>Equipe: {employee.equipe || '-'}</div>
+                                  <div>Departamento: {getEmployeeDepartmentName(employee)}</div>
                                   <div>Cargo: {employee.cargo || '-'}</div>
                                 </div>
                               </button>

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { Search, Download, Cake, Medal } from 'lucide-react'
+import { Search, Cake, Medal } from 'lucide-react'
 import { Employee } from '../App'
 import Select from '../components/Select'
 
@@ -30,29 +30,80 @@ const getMonthIndexFromDate = (dateValue: string) => {
   return monthIndex
 }
 
+const getDayFromDate = (dateValue: string) => {
+  const [day] = dateValue.split('/')
+  if (!day) return -1
+  const dayNumber = Number(day)
+  if (Number.isNaN(dayNumber)) return -1
+  return dayNumber
+}
+
 const Birthdays: React.FC<BirthdaysProps> = ({ employees }) => {
   const currentMonthIndex = new Date().getMonth()
+  const [inputSelectedMonthIndex, setInputSelectedMonthIndex] = useState(currentMonthIndex)
+  const [inputSelectedMonthIndexWork, setInputSelectedMonthIndexWork] = useState(currentMonthIndex)
+  const [inputEmployeeQuery, setInputEmployeeQuery] = useState('')
+  const [inputWorkEmployeeQuery, setInputWorkEmployeeQuery] = useState('')
+
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(currentMonthIndex)
   const [selectedMonthIndexWork, setSelectedMonthIndexWork] = useState(currentMonthIndex)
   const [employeeQuery, setEmployeeQuery] = useState('')
   const [workEmployeeQuery, setWorkEmployeeQuery] = useState('')
 
+  const handleApplyMonthlyBirthdaysFilters = () => {
+    setSelectedMonthIndex(inputSelectedMonthIndex)
+    setEmployeeQuery(inputEmployeeQuery)
+  }
+
+  const handleApplyWorkAnniversaryFilters = () => {
+    setSelectedMonthIndexWork(inputSelectedMonthIndexWork)
+    setWorkEmployeeQuery(inputWorkEmployeeQuery)
+  }
+
   const monthlyBirthdays = useMemo(() => {
-    return employees.filter((employee) => {
-      const monthIndex = getMonthIndexFromDate(employee.dataNascimento)
-      if (monthIndex !== selectedMonthIndex) return false
-      if (!employeeQuery.trim()) return true
-      return employee.nomeCompleto.toLowerCase().includes(employeeQuery.trim().toLowerCase())
-    })
+    return employees
+      .filter((employee) => {
+        const monthIndex = getMonthIndexFromDate(employee.dataNascimento)
+        if (monthIndex !== selectedMonthIndex) return false
+        if (!employeeQuery.trim()) return true
+        return employee.nomeCompleto.toLowerCase().includes(employeeQuery.trim().toLowerCase())
+      })
+      .sort((a, b) => {
+        const dayA = getDayFromDate(a.dataNascimento)
+        const dayB = getDayFromDate(b.dataNascimento)
+
+        if (dayA === -1 && dayB === -1) {
+          return a.nomeCompleto.localeCompare(b.nomeCompleto, 'pt-BR')
+        }
+
+        if (dayA === -1) return 1
+        if (dayB === -1) return -1
+        if (dayA !== dayB) return dayA - dayB
+        return a.nomeCompleto.localeCompare(b.nomeCompleto, 'pt-BR')
+      })
   }, [employees, employeeQuery, selectedMonthIndex])
 
   const workAnniversaries = useMemo(() => {
-    return employees.filter((employee) => {
-      const monthIndex = getMonthIndexFromDate(employee.dataAdmissao)
-      if (monthIndex !== selectedMonthIndexWork) return false
-      if (!workEmployeeQuery.trim()) return true
-      return employee.nomeCompleto.toLowerCase().includes(workEmployeeQuery.trim().toLowerCase())
-    })
+    return employees
+      .filter((employee) => {
+        const monthIndex = getMonthIndexFromDate(employee.dataAdmissao)
+        if (monthIndex !== selectedMonthIndexWork) return false
+        if (!workEmployeeQuery.trim()) return true
+        return employee.nomeCompleto.toLowerCase().includes(workEmployeeQuery.trim().toLowerCase())
+      })
+      .sort((a, b) => {
+        const dayA = getDayFromDate(a.dataAdmissao)
+        const dayB = getDayFromDate(b.dataAdmissao)
+
+        if (dayA === -1 && dayB === -1) {
+          return a.nomeCompleto.localeCompare(b.nomeCompleto, 'pt-BR')
+        }
+
+        if (dayA === -1) return 1
+        if (dayB === -1) return -1
+        if (dayA !== dayB) return dayA - dayB
+        return a.nomeCompleto.localeCompare(b.nomeCompleto, 'pt-BR')
+      })
   }, [employees, selectedMonthIndexWork, workEmployeeQuery])
 
   return (
@@ -82,9 +133,9 @@ const Birthdays: React.FC<BirthdaysProps> = ({ employees }) => {
                   <input
                     type="text"
                     placeholder="Comece digitando o nome"
-                    value={employeeQuery}
-                    onChange={(e) => setEmployeeQuery(e.target.value)}
-                    className="w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={inputEmployeeQuery}
+                    onChange={(e) => setInputEmployeeQuery(e.target.value)}
+                    className="w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-100"
                   />
                   <Search size={16} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 </div>
@@ -93,25 +144,20 @@ const Birthdays: React.FC<BirthdaysProps> = ({ employees }) => {
                 <label className="text-xs text-gray-500">Mês <span className="text-red-500">*</span></label>
                 <div className="mt-1">
                   <Select
-                    value={selectedMonthIndex}
-                    onChange={(value) => setSelectedMonthIndex(Number(value))}
+                    value={inputSelectedMonthIndex}
+                    onChange={(value) => setInputSelectedMonthIndex(Number(value))}
                     options={monthNames.map((month, index) => ({ label: month, value: index }))}
                   />
                 </div>
               </div>
             </div>
 
-            <button className="mt-6 w-full bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-indigo-700">
+            <button
+              onClick={handleApplyMonthlyBirthdaysFilters}
+              className="mt-6 w-full bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-indigo-700"
+            >
               Pesquisar
             </button>
-
-            <div className="mt-6 flex items-center justify-between text-sm text-gray-500">
-              <span />
-              <button className="flex items-center gap-2 px-2 py-1 border border-gray-200 rounded-md hover:bg-gray-50">
-                <Download size={14} />
-                <span>Exportar</span>
-              </button>
-            </div>
 
             <div className="mt-4">
               <div className="flex items-center justify-end text-xs text-gray-500 mb-3">
@@ -178,9 +224,9 @@ const Birthdays: React.FC<BirthdaysProps> = ({ employees }) => {
                   <input
                     type="text"
                     placeholder="Comece digitando o nome"
-                    value={workEmployeeQuery}
-                    onChange={(e) => setWorkEmployeeQuery(e.target.value)}
-                    className="w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={inputWorkEmployeeQuery}
+                    onChange={(e) => setInputWorkEmployeeQuery(e.target.value)}
+                    className="w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-100"
                   />
                   <Search size={16} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 </div>
@@ -189,15 +235,18 @@ const Birthdays: React.FC<BirthdaysProps> = ({ employees }) => {
                 <label className="text-xs text-gray-500">Mês <span className="text-red-500">*</span></label>
                 <div className="mt-1">
                   <Select
-                    value={selectedMonthIndexWork}
-                    onChange={(value) => setSelectedMonthIndexWork(Number(value))}
+                    value={inputSelectedMonthIndexWork}
+                    onChange={(value) => setInputSelectedMonthIndexWork(Number(value))}
                     options={monthNames.map((month, index) => ({ label: month, value: index }))}
                   />
                 </div>
               </div>
             </div>
 
-            <button className="mt-6 w-full bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-indigo-700">
+            <button
+              onClick={handleApplyWorkAnniversaryFilters}
+              className="mt-6 w-full bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-indigo-700"
+            >
               Pesquisar
             </button>
 

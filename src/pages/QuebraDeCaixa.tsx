@@ -3,31 +3,36 @@ import { MoreVertical, Edit2, Trash2, Plus, Search } from 'lucide-react'
 import { Employee } from '../App'
 import DatePicker from '../components/DatePicker'
 import Select from '../components/Select'
-import { buildStoreOptions, focusNext, handleKeyDown, formatDate } from '../utils/formatters'
+import { buildStoreOptions, focusNext, handleKeyDown } from '../utils/formatters'
 import { useClickOutside } from '../hooks/useClickOutside'
 import DeleteConfirmModal from '../components/DeleteConfirmModal'
 
-interface Falta {
+interface Quebra {
   id: string
   funcionarioId: string
   funcionarioNome: string
   data: string
-  motivo: string
+  formaPagamento: string
+  valor?: string
+  tipo?: 'sobrou' | 'faltou'
+  comprovantes?: number
+  desconto?: number
+  observacao?: string
   criadoEm: string
 }
 
-interface FaltasProps {
+interface QuebraDeCaixaProps {
   employees: Employee[]
-  faltas: Falta[]
+  quebras: Quebra[]
   onNavigate?: (route: string) => void
-  onDeleteFalta?: (id: string) => void
+  onDeleteQuebra?: (id: string) => void
   positions?: any[]
   departments?: any[]
   teams?: any[]
   businessUnits?: any[]
 }
 
-const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDeleteFalta, positions = [], departments = [], teams = [], businessUnits = [] }) => {
+const QuebraDeCaixa: React.FC<QuebraDeCaixaProps> = ({ employees, quebras, onNavigate, onDeleteQuebra, positions = [], departments = [], teams = [], businessUnits = [] }) => {
   const standardFieldClass = 'rounded-md text-sm focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-100'
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -44,7 +49,6 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
   const [pendingDelete, setPendingDelete] = useState<{ id: string; funcionarioNome: string } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  // Refs para focar nos campos
   const nomeFilterRef = useRef<HTMLInputElement>(null)
   const dataInicioRef = useRef<HTMLInputElement>(null)
   const dataFimRef = useRef<HTMLInputElement>(null)
@@ -53,11 +57,8 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
   const equipeRef = useRef<HTMLButtonElement>(null)
   const lojaRef = useRef<HTMLButtonElement>(null)
   const pesquisarRef = useRef<HTMLButtonElement>(null)
-
-  // Estado para controlar abertura automática do calendário da data fim
   const [autoOpenDataFim, setAutoOpenDataFim] = useState(false)
 
-  // Estados para os filtros de entrada (não aplicados automaticamente)
   const [inputDataInicio, setInputDataInicio] = useState('')
   const [inputDataFim, setInputDataFim] = useState('')
   const [inputCargoFilter, setInputCargoFilter] = useState('')
@@ -65,7 +66,6 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
   const [inputEquipeFilter, setInputEquipeFilter] = useState('')
   const [inputLojaFilter, setInputLojaFilter] = useState('')
 
-  // Estados para os filtros aplicados (usados na filtragem)
   const [appliedFilters, setAppliedFilters] = useState({
     searchQuery: '',
     dataInicio: '',
@@ -98,38 +98,34 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
 
   const storeOptions = buildStoreOptions(businessUnits, companyData)
 
-  const filteredFaltas = faltas.filter((falta) => {
-    // Filtro por nome do funcionário
-    if (appliedFilters.searchQuery.trim() && !falta.funcionarioNome.toLowerCase().includes(appliedFilters.searchQuery.trim().toLowerCase())) {
+  const filteredQuebras = quebras.filter((quebra) => {
+    if (appliedFilters.searchQuery.trim() && !quebra.funcionarioNome.toLowerCase().includes(appliedFilters.searchQuery.trim().toLowerCase())) {
       return false
     }
 
-    // Filtro por data início
     if (appliedFilters.dataInicio) {
-      const faltaDate = new Date(falta.data.split('/').reverse().join('-'))
+      const quebraDate = new Date(quebra.data.split('/').reverse().join('-'))
       const inicioDate = new Date(appliedFilters.dataInicio.split('/').reverse().join('-'))
-      if (faltaDate < inicioDate) {
+      if (quebraDate < inicioDate) {
         return false
       }
     }
 
-    // Filtro por data fim
     if (appliedFilters.dataFim) {
-      const faltaDate = new Date(falta.data.split('/').reverse().join('-'))
+      const quebraDate = new Date(quebra.data.split('/').reverse().join('-'))
       const fimDate = new Date(appliedFilters.dataFim.split('/').reverse().join('-'))
-      if (faltaDate > fimDate) {
+      if (quebraDate > fimDate) {
         return false
       }
     }
 
-    // Filtros por cargo, departamento e equipe
     if (
       appliedFilters.cargoFilter ||
       appliedFilters.departamentoFilter ||
       appliedFilters.equipeFilter ||
       appliedFilters.lojaFilter
     ) {
-      const employee = employees.find(e => e.id === falta.funcionarioId)
+      const employee = employees.find(e => e.id === quebra.funcionarioId)
       if (!employee) return false
 
       if (appliedFilters.cargoFilter && employee.cargo !== appliedFilters.cargoFilter) {
@@ -137,7 +133,6 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
       }
 
       if (appliedFilters.departamentoFilter) {
-        // Para departamento, precisamos verificar se a equipe do funcionário pertence ao departamento
         const team = teams.find(t => t.nome === employee.equipe)
         if (!team || team.departamentoNome !== appliedFilters.departamentoFilter) {
           return false
@@ -170,62 +165,59 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
 
   const handleDataInicioChange = (value: string) => {
     setInputDataInicio(value)
-    // Pular para o campo de data fim após selecionar data início
     if (value && dataFimRef.current) {
       setTimeout(() => {
         dataFimRef.current?.focus()
-        // Abrir o calendário automaticamente após focar
         setAutoOpenDataFim(true)
-        // Resetar o estado após um curto período
         setTimeout(() => setAutoOpenDataFim(false), 100)
       }, 100)
     }
   }
 
-  const handleDeleteFalta = (id: string, funcionarioNome: string) => {
+  const handleDelete = (id: string, funcionarioNome: string) => {
     setPendingDelete({ id, funcionarioNome })
     setOpenMenuId(null)
   }
 
-  const confirmDeleteFalta = () => {
+  const confirmDelete = () => {
     if (!pendingDelete) return
-    onDeleteFalta?.(pendingDelete.id)
+    onDeleteQuebra?.(pendingDelete.id)
     setPendingDelete(null)
   }
 
-  const cancelDeleteFalta = () => {
+  const cancelDelete = () => {
     setPendingDelete(null)
   }
 
-  const handleAddFalta = () => {
-    onNavigate?.('adicionar-falta')
+  const handleAdd = () => {
+    onNavigate?.('adicionar-quebra-de-caixa')
   }
 
-  const handleEditFalta = (id: string) => {
-    onNavigate?.(`editar-falta?id=${id}`)
+  const handleEdit = (id: string) => {
+    onNavigate?.(`editar-quebra-de-caixa?id=${id}`)
   }
 
   return (
     <div className="bg-gray-50 min-h-screen">
       {pendingDelete && (
         <DeleteConfirmModal
-          title="Excluir falta"
+          title="Excluir quebra de caixa"
           description="Tem certeza que deseja excluir o registro abaixo?"
           itemName={pendingDelete.funcionarioNome}
-          onConfirm={confirmDeleteFalta}
-          onCancel={cancelDeleteFalta}
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
         />
       )}
 
       <div className="bg-white border-b">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-gray-900">Faltas</h1>
+          <h1 className="text-xl font-semibold text-gray-900">Quebra de caixa</h1>
           <button
-            onClick={handleAddFalta}
+            onClick={handleAdd}
             className="w-fit bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-indigo-700 flex items-center gap-2 justify-center"
           >
             <Plus size={18} />
-            Adicionar falta
+            Adicionar quebra
           </button>
         </div>
       </div>
@@ -364,23 +356,27 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
               </button>
             </div>
           </div>
+
+          <div className="flex justify-end">
+            {/* placeholder removed - button now inside grid */}
+          </div>
         </div>
 
         <div className="bg-white shadow rounded-lg overflow-visible">
-          {filteredFaltas.length === 0 ? (
+          {filteredQuebras.length === 0 ? (
             <div className="p-12 text-center">
-              <p className="text-gray-500 text-lg mb-4">Nenhuma falta registrada</p>
+              <p className="text-gray-500 text-lg mb-4">Nenhuma quebra registrada</p>
               <button
-                onClick={handleAddFalta}
+                onClick={handleAdd}
                 className="bg-indigo-600 text-white px-6 py-2.5 rounded font-medium hover:bg-indigo-700"
               >
-                Adicionar primeira falta
+                Adicionar primeira quebra
               </button>
             </div>
           ) : (
             <>
               <div className="p-4 bg-gray-50 border-b text-right text-sm text-gray-600">
-                Página 1/1 - Exibindo {filteredFaltas.length} de {filteredFaltas.length} registros
+                Página 1/1 - Exibindo {filteredQuebras.length} de {filteredQuebras.length} registros
               </div>
 
               <table className="w-full">
@@ -393,64 +389,84 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
                       Data
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Motivo
+                      Forma de pagamento
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Criado em
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Valor
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Situação
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Comprovantes
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Desconto
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Observação
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
                       Ações
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredFaltas.map((falta) => (
-                    <tr key={falta.id} className="hover:bg-gray-50">
+                <tbody className="bg-white">
+                  {filteredQuebras.map((quebra) => (
+                    <tr key={quebra.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {falta.funcionarioNome}
+                        {quebra.funcionarioNome}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {formatDate(falta.data)}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {quebra.data}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {falta.motivo || '-'}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {quebra.formaPagamento}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {falta.criadoEm}
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                        {quebra.valor || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium relative">
-                        <button
-                          onClick={() => setOpenMenuId(openMenuId === falta.id ? null : falta.id)}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <MoreVertical size={18} />
-                        </button>
-                        {openMenuId === falta.id && (
-                          <div
-                            ref={menuRef}
-                            className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-10"
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                        {quebra.tipo === 'sobrou' ? 'Sobrou' : quebra.tipo === 'faltou' ? 'Faltou' : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                        {quebra.comprovantes ?? '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                        {quebra.desconto != null ? `R$ ${quebra.desconto.toFixed(2)}` : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                        {quebra.observacao || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="relative inline-block text-left" ref={menuRef}>
+                          <button
+                            onClick={() => setOpenMenuId(openMenuId === quebra.id ? null : quebra.id)}
+                            className="text-gray-500 hover:text-gray-700 focus:outline-none"
                           >
-                            <button
-                              onClick={() => {
-                                handleEditFalta(falta.id)
-                                setOpenMenuId(null)
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
-                            >
-                              <Edit2 size={16} />
-                              Editar
-                            </button>
-                            <button
-                              onClick={() => {
-                                handleDeleteFalta(falta.id, falta.funcionarioNome)
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 rounded-b-lg"
-                            >
-                              <Trash2 size={16} />
-                              Excluir
-                            </button>
-                          </div>
-                        )}
+                            <MoreVertical size={16} />
+                          </button>
+                          {openMenuId === quebra.id && (
+                            <div className="origin-top-right absolute right-0 mt-2 w-32 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                              <div className="py-1">
+                                <button
+                                  onClick={() => handleEdit(quebra.id)}
+                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                                >
+                                  <Edit2 size={14} />
+                                  Editar
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(quebra.id, quebra.funcionarioNome)}
+                                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
+                                >
+                                  <Trash2 size={14} />
+                                  Excluir
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -464,4 +480,4 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
   )
 }
 
-export default Faltas
+export default QuebraDeCaixa

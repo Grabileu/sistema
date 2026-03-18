@@ -22,6 +22,14 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+  textarea,
+  select {
+    @apply focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-100;
+  }
+}
+
 * {
   @apply transition-all duration-200;
 }
@@ -68,6 +76,234 @@ body {
   }
 }
 
+@keyframes loginOrbFloat {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -18px, 0) scale(1.04);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes loginCardFloat {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes loginGridDrift {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-8px, 8px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
 .animate-fadeIn {
   animation: fadeIn 0.5s ease-in-out;
+}
+
+.login-hero {
+  background:
+    radial-gradient(circle at top left, rgba(147, 197, 253, 0.34), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.28), transparent 28%),
+    linear-gradient(135deg, #0f172a 0%, #1d4ed8 45%, #2563eb 100%);
+}
+
+.login-hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent 85%);
+  animation: loginGridDrift 14s ease-in-out infinite;
+}
+
+.login-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(18px);
+  opacity: 0.9;
+  animation: loginOrbFloat 11s ease-in-out infinite;
+}
+
+.login-orb-primary {
+  top: 8%;
+  right: 16%;
+  height: 180px;
+  width: 180px;
+  background: rgba(191, 219, 254, 0.22);
+}
+
+.login-orb-secondary {
+  bottom: 14%;
+  left: 10%;
+  height: 240px;
+  width: 240px;
+  background: rgba(30, 64, 175, 0.28);
+  animation-delay: -4s;
+}
+
+.login-orb-tertiary {
+  top: 36%;
+  right: -4%;
+  height: 140px;
+  width: 140px;
+  background: rgba(255, 255, 255, 0.12);
+  animation-delay: -7s;
+}
+
+.login-float-card {
+  animation: loginCardFloat 7s ease-in-out infinite;
+}
+
+.login-float-card-delay {
+  animation-delay: -2.5s;
+}
+
+.login-float-card-slow {
+  animation-duration: 9s;
+  animation-delay: -4s;
+}
+
+.login-status-panel {
+  animation: loginCardFloat 8s ease-in-out infinite;
+}
+
+.login-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.login-status-bars {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.login-status-bar {
+  display: inline-block;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(191, 219, 254, 0.92), rgba(255, 255, 255, 0.9));
+  box-shadow: 0 0 18px rgba(191, 219, 254, 0.2);
+}
+
+.login-status-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 9999px;
+  background: #86efac;
+  box-shadow: 0 0 0 0 rgba(134, 239, 172, 0.65);
+  animation: loginStatusPulse 2.4s ease-in-out infinite;
+}
+
+.system-pulse-shell {
+  height: 0.375rem;
+  width: min(420px, 100%);
+  overflow: hidden;
+  border-radius: 9999px;
+  background: rgba(148, 163, 184, 0.18);
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.system-pulse-bar {
+  height: 100%;
+  width: 42%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.15), rgba(59, 130, 246, 0.95), rgba(191, 219, 254, 0.45));
+  animation: systemPulseBarMotion 1.2s ease-in-out infinite;
+}
+
+.system-connection-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(15, 23, 42, 0.82);
+  padding: 0.75rem 1rem;
+  color: #f8fafc;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.25);
+  backdrop-filter: blur(14px);
+}
+
+.system-connection-pill span {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.system-connection-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 9999px;
+  background: #facc15;
+  box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.45);
+  animation: systemConnectionPulse 1.8s ease-in-out infinite;
+}
+
+.system-connection-dot-offline {
+  background: #f87171;
+  box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.5);
+}
+
+@keyframes loginStatusPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(134, 239, 172, 0.55);
+  }
+  70% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 10px rgba(134, 239, 172, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(134, 239, 172, 0);
+  }
+}
+
+@keyframes systemPulseBarMotion {
+  0% {
+    transform: translateX(-35%);
+  }
+  50% {
+    transform: translateX(140%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+@keyframes systemConnectionPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.45);
+  }
+  70% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 9px rgba(250, 204, 21, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
+  }
 }

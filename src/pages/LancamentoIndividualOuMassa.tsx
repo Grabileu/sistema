@@ -1,6 +1,36 @@
 import React, { useState } from "react";
 
+function getLicencaIcon(nome: string) {
+  switch (nome) {
+    case 'Férias':
+      return (
+        <span className="text-yellow-500">
+          <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#fbbf24" strokeWidth="2"/><path d="M8 16l8-8" stroke="#fbbf24" strokeWidth="2"/><path d="M16 16l-8-8" stroke="#fbbf24" strokeWidth="2"/></svg>
+        </span>
+      );
+    case 'Afastamento':
+      return (
+        <span className="text-red-500">
+          <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" stroke="#ef4444" strokeWidth="2"/><path d="M8 8l8 8M16 8l-8 8" stroke="#ef4444" strokeWidth="2"/></svg>
+        </span>
+      );
+    case 'Atestado médico':
+      return (
+        <span className="text-green-500">
+          <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" stroke="#22c55e" strokeWidth="2"/><path d="M12 8v8M8 12h8" stroke="#22c55e" strokeWidth="2"/></svg>
+        </span>
+      );
+    default:
+      return (
+        <span className="text-blue-600">
+          <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" stroke="#2563eb" strokeWidth="2"/><path d="M8 8h8v8H8z" stroke="#2563eb" strokeWidth="2"/></svg>
+        </span>
+      );
+  }
+}
+
 export default function LancamentoIndividualOuMassa() {
+  const [licencaSelecionada] = useState(() => localStorage.getItem('licencaSelecionada') || '');
   const [tipoLancamento, setTipoLancamento] = useState<'individual' | 'massa' | null>(() => {
     const saved = localStorage.getItem('tipoLancamento');
     if (saved === 'individual' || saved === 'massa') return saved;
@@ -21,10 +51,10 @@ export default function LancamentoIndividualOuMassa() {
   return (
       <div className="min-h-screen bg-white flex flex-col">
         {/* Header */}
-        <div className="pt-8 px-12">
+        <div className="pt-5 px-8 md:px-12">
           <div className="flex items-center gap-2">
             <span className="text-blue-500 text-2xl">
-              <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><path stroke="#2563eb" strokeWidth="2" d="M8 7V3m8 4V3M3 8h18M5 21h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v11a2 2 0 002 2z"/></svg>
+              <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><path d="M9 3h6a1 1 0 011 1v1h2a2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h2V4a1 1 0 011-1z" stroke="#2563eb" strokeWidth="2"/><path d="M9 5h6" stroke="#2563eb" strokeWidth="2"/><path d="M9 12l2 2 4-4" stroke="#2563eb" strokeWidth="2"/></svg>
             </span>
             <h1 className="text-2xl font-semibold text-gray-800">Lançamento de licença</h1>
           </div>
@@ -81,7 +111,7 @@ export default function LancamentoIndividualOuMassa() {
         )}
 
       {/* Etapas padrão */}
-      <div className="flex items-center justify-center w-full max-w-3xl mt-8 mx-auto">
+      <div className="flex items-center justify-center w-full max-w-3xl mt-5 mx-auto px-4">
         {/* Step 1 */}
         <div className="flex flex-col items-center">
           <div className="w-7 h-7 rounded-full bg-gray-300 flex items-center justify-center">
@@ -115,36 +145,50 @@ export default function LancamentoIndividualOuMassa() {
         )}
       </div>
 
+      {licencaSelecionada && (
+        <div className="flex justify-center mt-4 px-4">
+          <div className="inline-flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 shadow-sm">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white shadow-sm">
+              {getLicencaIcon(licencaSelecionada)}
+            </span>
+            <div className="text-left">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-blue-600">Afastamento selecionado:</span>
+              <span className="block text-sm font-bold text-gray-800">{licencaSelecionada}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Cards - aparecem sempre */}
-      <div className="flex justify-center items-center gap-8 mt-12">
+      <div className="flex flex-wrap justify-center items-center gap-6 mt-6 px-4">
         {/* Card Individual */}
         <div
-          className={`rounded-xl shadow-md p-8 w-80 flex flex-col items-center cursor-pointer transition border-2 ${tipoLancamento === 'individual' ? 'border-blue-600 bg-blue-50' : 'border-transparent hover:border-blue-300'}`}
+          className={`rounded-xl shadow-md p-6 w-72 flex flex-col items-center cursor-pointer transition border-2 ${tipoLancamento === 'individual' ? 'border-blue-600 bg-blue-50' : 'border-transparent hover:border-blue-300'}`}
           onClick={() => {
             setTipoLancamento('individual');
             localStorage.setItem('tipoLancamento', 'individual');
           }}
         >
-          <svg width="64" height="64" fill="none" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#EFF6FF"/><path stroke="#2563eb" strokeWidth="2" d="M32 36c-6 0-12 3-12 7v3h24v-3c0-4-6-7-12-7z"/><circle cx="32" cy="24" r="8" stroke="#2563eb" strokeWidth="2"/></svg>
-          <h2 className="text-lg font-semibold text-gray-800 mt-4">Lançamento individual</h2>
-          <p className="text-gray-500 text-center mt-2">Selecione um colaborador para fazer um lançamento de licença</p>
+          <svg width="56" height="56" fill="none" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#EFF6FF"/><path stroke="#2563eb" strokeWidth="2" d="M32 36c-6 0-12 3-12 7v3h24v-3c0-4-6-7-12-7z"/><circle cx="32" cy="24" r="8" stroke="#2563eb" strokeWidth="2"/></svg>
+          <h2 className="text-lg font-semibold text-gray-800 mt-3">Lançamento individual</h2>
+          <p className="text-gray-500 text-center mt-1.5">Selecione um colaborador para fazer um lançamento de licença</p>
         </div>
         {/* Card em Massa */}
         <div
-          className={`rounded-xl shadow-md p-8 w-80 flex flex-col items-center cursor-pointer transition border-2 ${tipoLancamento === 'massa' ? 'border-blue-600 bg-blue-50' : 'border-transparent hover:border-blue-300'}`}
+          className={`rounded-xl shadow-md p-6 w-72 flex flex-col items-center cursor-pointer transition border-2 ${tipoLancamento === 'massa' ? 'border-blue-600 bg-blue-50' : 'border-transparent hover:border-blue-300'}`}
           onClick={() => {
             setTipoLancamento('massa');
             localStorage.setItem('tipoLancamento', 'massa');
           }}
         >
-          <svg width="64" height="64" fill="none" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#EFF6FF"/><path stroke="#2563eb" strokeWidth="2" d="M20 36c-6 0-12 3-12 7v3h24v-3c0-4-6-7-12-7z"/><circle cx="20" cy="24" r="8" stroke="#2563eb" strokeWidth="2"/><path stroke="#2563eb" strokeWidth="2" d="M44 36c-6 0-12 3-12 7v3h24v-3c0-4-6-7-12-7z"/><circle cx="44" cy="24" r="8" stroke="#2563eb" strokeWidth="2"/></svg>
-          <h2 className="text-lg font-semibold text-gray-800 mt-4">Lançamento em massa</h2>
-          <p className="text-gray-500 text-center mt-2">Configure a licença para mais de um colaborador.</p>
+          <svg width="56" height="56" fill="none" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#EFF6FF"/><path stroke="#2563eb" strokeWidth="2" d="M20 36c-6 0-12 3-12 7v3h24v-3c0-4-6-7-12-7z"/><circle cx="20" cy="24" r="8" stroke="#2563eb" strokeWidth="2"/><path stroke="#2563eb" strokeWidth="2" d="M44 36c-6 0-12 3-12 7v3h24v-3c0-4-6-7-12-7z"/><circle cx="44" cy="24" r="8" stroke="#2563eb" strokeWidth="2"/></svg>
+          <h2 className="text-lg font-semibold text-gray-800 mt-3">Lançamento em massa</h2>
+          <p className="text-gray-500 text-center mt-1.5">Configure a licença para mais de um colaborador.</p>
         </div>
       </div>
 
       {/* Footer Buttons */}
-      <div className="flex justify-between items-center px-12 pb-8 mt-16">
+      <div className="sticky bottom-0 z-10 mt-6 flex justify-between items-center px-8 md:px-12 py-4 border-t border-slate-100 bg-white/95 backdrop-blur">
         <button
           className="border border-blue-600 text-blue-600 rounded-full px-6 py-2 font-medium hover:bg-blue-50 transition"
           onClick={handleVoltar}

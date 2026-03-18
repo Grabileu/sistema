@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { MoreVertical, Eye, Edit2, Trash2 } from 'lucide-react'
+import DeleteConfirmModal from '../components/DeleteConfirmModal'
 
 import { Employee } from '../App'
 
@@ -24,6 +25,7 @@ interface TeamsProps {
 const Teams: React.FC<TeamsProps> = ({ onNavigate, teams, employees, onViewTeam, onEditTeam, onDeleteTeam, initialTab }) => {
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; nome: string } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<'gerenciar' | 'gestores'>(initialTab || 'gerenciar');
 
@@ -34,35 +36,21 @@ const Teams: React.FC<TeamsProps> = ({ onNavigate, teams, employees, onViewTeam,
     }
   }, [initialTab])
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpenMenuId(null)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  useClickOutside(menuRef, () => setOpenMenuId(null))
 
   const handleDelete = (id: string, nome: string) => {
-    // Verifica apenas funcionários ativos (visíveis)
-    const equipe = teams.find(t => t.id === id);
-    const employeesEquipe = employees.filter(emp => emp.equipe === nome);
-    // Considera apenas funcionários que realmente estão na lista de funcionários ativos
-    if (employeesEquipe.length > 0) {
-      // Verifica se todos os funcionários encontrados estão realmente visíveis (ativos)
-      const ativos = employeesEquipe.filter(emp => employees.some(e => e.id === emp.id));
-      if (ativos.length > 0) {
-        alert('Não é possível excluir a equipe. Existem funcionários cadastrados nesta equipe.');
-        setOpenMenuId(null);
-        return;
-      }
-    }
-    if (confirm(`Tem certeza que deseja excluir a equipe "${nome}"?`)) {
-      onDeleteTeam?.(id)
-      setOpenMenuId(null)
-    }
+    setPendingDelete({ id, nome })
+    setOpenMenuId(null)
+  }
+
+  const confirmDelete = () => {
+    if (!pendingDelete) return
+    onDeleteTeam?.(pendingDelete.id)
+    setPendingDelete(null)
+  }
+
+  const cancelDelete = () => {
+    setPendingDelete(null)
   }
 
   const handleEdit = (id: string) => {
@@ -77,12 +65,19 @@ const Teams: React.FC<TeamsProps> = ({ onNavigate, teams, employees, onViewTeam,
 
   return (
     <div className="bg-gray-50 min-h-screen">
+      {pendingDelete && (
+        <DeleteConfirmModal
+          title="Excluir equipe"
+          description="Tem certeza que deseja excluir a equipe abaixo?"
+          itemName={pendingDelete.nome}
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+        />
+      )}
+
       <div className="bg-white border-b">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-semibold text-gray-900">Equipes</h1>
-            <span className="text-gray-300">★</span>
-          </div>
+          <h1 className="text-xl font-semibold text-gray-900">Equipes</h1>
           <button
             type="button"
             onClick={() => onNavigate?.('cadastro-equipe')}
@@ -247,3 +242,4 @@ const Teams: React.FC<TeamsProps> = ({ onNavigate, teams, employees, onViewTeam,
 }
 
 export default Teams
+import { useClickOutside } from '../hooks/useClickOutside'

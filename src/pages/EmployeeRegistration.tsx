@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-import { formatCPF, formatDate, formatDateTime } from '../utils/formatters';
-import { formatPIS } from '../utils/formatters';
+import { formatCPF, formatDateTime, formatPIS, focusNext, handleKeyDown } from '../utils/formatters';
 import { Employee, Position, Team, BusinessUnit } from '../App';
 import Select from '../components/Select';
 import DatePicker from '../components/DatePicker';
+import { Search } from 'lucide-react';
 
 interface EmployeeRegistrationProps {
   onNavigate?: (route: string) => void;
@@ -12,14 +12,28 @@ interface EmployeeRegistrationProps {
   onUpdateEmployee?: (employee: Employee) => void;
   editingEmployee?: Employee | null;
   businessUnits?: BusinessUnit[];
+  employees?: Employee[];
 }
+
+const ensureCurrentOption = (
+  options: { label: string; value: string }[],
+  currentValue: string,
+  currentLabel = currentValue
+) => {
+  if (!currentValue || options.some((option) => option.value === currentValue)) {
+    return options;
+  }
+
+  return [...options, { label: currentLabel, value: currentValue }];
+};
 
 const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({ 
   onNavigate, 
   onAddEmployee,
   onUpdateEmployee,
   editingEmployee,
-  businessUnits = []
+  businessUnits = [],
+  employees = []
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   
@@ -31,9 +45,18 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
   const generoRef = useRef<HTMLButtonElement>(null);
   const dataNascimentoRef = useRef<HTMLInputElement>(null);
   const cltRef = useRef<HTMLButtonElement>(null);
+  const pisRef = useRef<HTMLInputElement>(null);
+  const nextStepButtonRef = useRef<HTMLButtonElement>(null);
+  const dataAdmissaoRef = useRef<HTMLInputElement>(null);
+  const lojaRef = useRef<HTMLButtonElement>(null);
+  const equipeRef = useRef<HTMLButtonElement>(null);
+  const cargoRef = useRef<HTMLButtonElement>(null);
+  const turnoRef = useRef<HTMLButtonElement>(null);
+  const criarDiasRef = useRef<HTMLInputElement>(null);
+  const finishButtonRef = useRef<HTMLButtonElement>(null);
   
   const [formData, setFormData] = useState({
-    matricula: '02',
+    matricula: '',
     nomeCompleto: '',
     email: '',
     cpf: '',
@@ -46,7 +69,7 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
     cargo: '',
     turno: '',
     criarDiasApartirDe: '03/02/2026',
-    unidadeNegocio: ''
+    loja: ''
   });
 
   const [cargoOptions, setCargoOptions] = useState<{ label: string; value: string }[]>([
@@ -60,23 +83,61 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
   const [turnoOptions, setTurnoOptions] = useState<{ label: string; value: string }[]>([
     { label: 'Selecione', value: '' }
   ]);
+
+  const [lojaOptions, setLojaOptions] = useState<{ label: string; value: string }[]>([
+    { label: 'Selecione', value: '' }
+  ]);
+
   // Carregar turnos cadastrados
   useEffect(() => {
+    let nextOptions = [{ label: 'Selecione', value: '' }];
     const storedTurnos = localStorage.getItem('turnos');
     if (storedTurnos) {
       try {
         const turnos = JSON.parse(storedTurnos);
-        setTurnoOptions([
+        nextOptions = [
           { label: 'Selecione', value: '' },
           ...turnos.map((t) => ({ label: t.nome, value: t.nome }))
-        ]);
+        ];
       } catch {
         localStorage.removeItem('turnos');
       }
     }
-  }, []);
 
-  // Carregar dados do funcionário em edição
+    setTurnoOptions(ensureCurrentOption(nextOptions, editingEmployee?.turno || ''));
+  }, [editingEmployee]);
+
+  // atualizar lista de lojas sempre que businessUnits mudar
+  useEffect(() => {
+    const nextOptions = [{ label: 'Selecione', value: '' }];
+    const optionValues = new Set<string>();
+
+    const companyDataStr = localStorage.getItem('companyData');
+    if (companyDataStr) {
+      try {
+        const companyData = JSON.parse(companyDataStr);
+        const companyName = companyData.nomeEmpresa || companyData.razaoSocial || 'Empresa Principal';
+
+        if (companyName && !optionValues.has(companyName)) {
+          optionValues.add(companyName);
+          nextOptions.push({ label: companyName, value: companyName });
+        }
+      } catch {}
+    }
+
+    businessUnits.forEach((unit) => {
+      if (!unit.nomeUnidade || optionValues.has(unit.nomeUnidade)) {
+        return;
+      }
+
+      optionValues.add(unit.nomeUnidade);
+      nextOptions.push({ label: unit.nomeUnidade, value: unit.nomeUnidade });
+    });
+
+    setLojaOptions(ensureCurrentOption(nextOptions, editingEmployee?.loja || ''));
+  }, [businessUnits, editingEmployee]);
+
+  // Carregar dados do funcionário em edição ou gerar matrícula ao criar novo
   useEffect(() => {
     if (editingEmployee) {
       setFormData({
@@ -93,40 +154,50 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
         cargo: editingEmployee.cargo || '',
         turno: editingEmployee.turno || '',
         criarDiasApartirDe: editingEmployee.criarDiasApartirDe || '03/02/2026',
-        unidadeNegocio: editingEmployee.unidadeNegocio || ''
+        loja: editingEmployee.loja || ''
       });
+    } else {
+      // new record: auto-generate sequential matricula
+      const next = employees.length + 1;
+      setFormData((prev) => ({ ...prev, matricula: String(next).padStart(2, '0') }));
     }
-  }, [editingEmployee]);
+  }, [editingEmployee, employees]);
 
   useEffect(() => {
     const storedPositions = localStorage.getItem('positions');
+    let nextOptions = [{ label: 'Selecione', value: '' }];
     if (storedPositions) {
       try {
         const positions = JSON.parse(storedPositions) as Position[];
-        setCargoOptions([
+        nextOptions = [
           { label: 'Selecione', value: '' },
           ...positions.map((p) => ({ label: p.nome, value: p.nome }))
-        ]);
+        ];
       } catch {
         localStorage.removeItem('positions');
       }
     }
-  }, []);
+
+    setCargoOptions(ensureCurrentOption(nextOptions, editingEmployee?.cargo || ''));
+  }, [editingEmployee]);
 
   useEffect(() => {
     const storedTeams = localStorage.getItem('teams');
+    let nextOptions = [{ label: 'Selecione', value: '' }];
     if (storedTeams) {
       try {
         const teams = JSON.parse(storedTeams) as Team[];
-        setTeamOptions([
+        nextOptions = [
           { label: 'Selecione', value: '' },
           ...teams.map((t) => ({ label: t.nome, value: t.nome }))
-        ]);
+        ];
       } catch {
         localStorage.removeItem('teams');
       }
     }
-  }, []);
+
+    setTeamOptions(ensureCurrentOption(nextOptions, editingEmployee?.equipe || ''));
+  }, [editingEmployee]);
 
   const [errors, setErrors] = useState<{
     nomeCompleto: boolean;
@@ -135,7 +206,7 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
     genero: boolean;
     dataNascimento: boolean;
     isCLT: boolean;
-    unidadeNegocio: boolean;
+    loja: boolean; // kept for UI but not validated
     dataAdmissao: boolean;
     equipe: boolean;
     cargo: boolean;
@@ -148,7 +219,7 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
     genero: false,
     dataNascimento: false,
     isCLT: false,
-    unidadeNegocio: false,
+    loja: false,
     dataAdmissao: false,
     equipe: false,
     cargo: false,
@@ -165,26 +236,27 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
       } else if (!formData.email.includes('@')) {
         emailError = 'invalid';
       }
-      const newErrors = {
+
+      // apenas campos da etapa 1 devem ser verificados aqui;
+      // os campos da etapa 2 já são validados em handleFinish
+      const step1Errors = {
         nomeCompleto: !formData.nomeCompleto,
         email: emailError,
         cpf: !formData.cpf,
         genero: !formData.genero,
         dataNascimento: !formData.dataNascimento,
         isCLT: !formData.isCLT,
-        unidadeNegocio: !formData.unidadeNegocio,
-        dataAdmissao: !formData.dataAdmissao,
-        equipe: !formData.equipe,
-        cargo: !formData.cargo,
-        turno: !formData.turno,
-        criarDiasApartirDe: !formData.criarDiasApartirDe
+        loja: false // mantenho mas não conta para validação
       };
-      setErrors(newErrors);
-      if (Object.values(newErrors).some(error => error)) {
+
+      // mescla com quaisquer erros já existentes de etapas posteriores
+      setErrors((prev) => ({ ...prev, ...step1Errors }));
+
+      if (Object.values(step1Errors).some(error => error)) {
         return;
       }
     }
-    
+
     if (currentStep < 2) {
       setCurrentStep(currentStep + 1);
     }
@@ -194,6 +266,7 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
     // Validação dos campos obrigatórios da etapa 2
     const finishErrors = {
       dataAdmissao: !formData.dataAdmissao,
+      loja: !formData.loja, // now required
       equipe: !formData.equipe,
       cargo: !formData.cargo,
       turno: !formData.turno,
@@ -221,8 +294,7 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
         equipe: formData.equipe,
         cargo: formData.cargo,
         turno: formData.turno,
-        ultimoRegistro: dateTime,
-        unidadeNegocio: formData.unidadeNegocio
+        loja: formData.loja
       };
       onUpdateEmployee(updatedEmployee);
     } else if (onAddEmployee) {
@@ -244,16 +316,9 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
         ultimoAcesso: dateTime,
         ultimoRegistro: dateTime,
         criarDiasApartirDe: formData.criarDiasApartirDe,
-        unidadeNegocio: formData.unidadeNegocio
+        loja: formData.loja
       };
       onAddEmployee(newEmployee);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent, nextRef?: React.RefObject<HTMLInputElement | HTMLButtonElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      nextRef?.current?.focus();
     }
   };
 
@@ -317,9 +382,9 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                     ref={matriculaRef}
                     type="text"
                     value={formData.matricula}
-                    onChange={(e) => setFormData({...formData, matricula: e.target.value})}
-                    onKeyDown={(e) => handleKeyDown(e, nomeRef)}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900"
+                    readOnly
+                    disabled
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-900 cursor-not-allowed"
                   />
                 </div>
 
@@ -338,7 +403,7 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                       setErrors({...errors, nomeCompleto: false});
                     }}
                     onKeyDown={(e) => handleKeyDown(e, emailRef)}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-900 placeholder-gray-500"
                   />
                   {errors.nomeCompleto && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
                 </div>
@@ -358,7 +423,7 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                       setErrors({...errors, email: false});
                     }}
                     onKeyDown={(e) => handleKeyDown(e, cpfRef)}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-900 placeholder-gray-500"
                   />
                   {errors.email === 'required' && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
                   {errors.email === 'invalid' && <p className="text-red-500 text-xs mt-1">O e-mail precisa ser válido</p>}
@@ -377,7 +442,7 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                     onChange={handleCpfInput}
                     onKeyDown={(e) => handleKeyDown(e, generoRef)}
                     maxLength={14}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-900 placeholder-gray-500"
                   />
                   {errors.cpf && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
                 </div>
@@ -393,8 +458,8 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                       setFormData({...formData, genero: String(value)});
                       setErrors({...errors, genero: false});
                     }}
-                    onKeyDown={(e) => handleKeyDown(e, dataNascimentoRef)}
                     buttonRef={generoRef}
+                    nextRef={dataNascimentoRef}
                     options={[
                       { label: 'Selecione', value: '' },
                       { label: 'Masculino', value: 'masculino' },
@@ -411,8 +476,13 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                     Data de nascimento <span className="text-red-500">*</span>
                   </label>
                   <DatePicker
+                    ref={dataNascimentoRef}
                     value={formData.dataNascimento}
                     onChange={(value) => setFormData({...formData, dataNascimento: value})}
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-900"
+                    openOnFocus
+                    enterSelectsToday
+                    nextRef={cltRef}
                     error={errors.dataNascimento}
                   />
                   {errors.dataNascimento && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
@@ -428,6 +498,11 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                     onChange={(value) => {
                       setFormData({...formData, isCLT: String(value)});
                       setErrors({...errors, isCLT: false});
+                      if (String(value) === 'sim') {
+                        focusNext(pisRef.current);
+                      } else {
+                        focusNext(nextStepButtonRef.current);
+                      }
                     }}
                     buttonRef={cltRef}
                     options={[
@@ -445,6 +520,7 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                       PIS
                     </label>
                     <input
+                      ref={pisRef}
                       type="text"
                       value={formData.pis}
                       onChange={(e) => {
@@ -453,9 +529,10 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                         const formatted = formatPIS(value);
                         setFormData({ ...formData, pis: formatted });
                       }}
+                      onKeyDown={(e) => handleKeyDown(e, nextStepButtonRef)}
                       placeholder="Digite"
-                      maxLength={15}
-                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900"
+                      maxLength={14}
+                      className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-900"
                     />
                   </div>
                 )}
@@ -470,6 +547,7 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                   Cancelar
                 </button>
                 <button
+                  ref={nextStepButtonRef}
                   onClick={handleNext}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-3 rounded font-medium"
                 >
@@ -491,12 +569,33 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                     Data de admissão <span className="text-red-500">*</span>
                   </label>
                   <DatePicker
+                    ref={dataAdmissaoRef}
                     value={formData.dataAdmissao}
                     onChange={(value) => setFormData({...formData, dataAdmissao: value})}
                     placeholder="DD/MM/AAAA"
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-900"
+                    enterSelectsToday
+                    nextRef={lojaRef}
                   />
                   {errors.dataAdmissao && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
+                </div>
+
+                {/* Loja do funcionário */}
+                <div>
+                  <label className="block text-gray-700 text-sm mb-2">
+                    Loja <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    value={formData.loja}
+                    onChange={(value) => {
+                      setFormData({...formData, loja: String(value)});
+                      setErrors((prev) => ({ ...prev, loja: false }));
+                    }}
+                    buttonRef={lojaRef}
+                    nextRef={equipeRef}
+                    options={lojaOptions}
+                  />
+                  {errors.loja && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
                 </div>
 
                 {/* Equipe */}
@@ -516,6 +615,8 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                   <Select
                     value={formData.equipe}
                     onChange={(value) => setFormData({...formData, equipe: String(value)})}
+                    buttonRef={equipeRef}
+                    nextRef={cargoRef}
                     options={teamOptions}
                   />
                   {errors.equipe && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
@@ -538,6 +639,8 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                   <Select
                     value={formData.cargo}
                     onChange={(value) => setFormData({...formData, cargo: String(value)})}
+                    buttonRef={cargoRef}
+                    nextRef={turnoRef}
                     options={cargoOptions}
                   />
                   {errors.cargo && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
@@ -560,6 +663,8 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                   <Select
                     value={formData.turno}
                     onChange={(value) => setFormData({...formData, turno: String(value)})}
+                    buttonRef={turnoRef}
+                    nextRef={criarDiasRef}
                     options={turnoOptions}
                   />
                   {errors.turno && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
@@ -581,10 +686,13 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                     </div>
                   </div>
                   <DatePicker
+                    ref={criarDiasRef}
                     value={formData.criarDiasApartirDe || '03/02/2026'}
                     onChange={(value) => setFormData({...formData, criarDiasApartirDe: value})}
                     placeholder="DD/MM/AAAA"
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-900"
+                    enterSelectsToday
+                    nextRef={finishButtonRef}
                     disabled={!!editingEmployee}
                   />
                   {errors.criarDiasApartirDe && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
@@ -600,6 +708,7 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
                   Voltar
                 </button>
                 <button
+                  ref={finishButtonRef}
                   onClick={handleFinish}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-3 rounded font-medium"
                 >

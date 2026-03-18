@@ -127,7 +127,7 @@ const BusinessUnitCreate: React.FC<BusinessUnitCreateProps> = ({
       <div className="bg-white border-b">
         <div className="container mx-auto px-6 py-4">
           <h1 className="text-xl font-semibold text-gray-900">
-            {editingBusinessUnit ? 'Editar unidade de negócio' : 'Cadastro de unidade de negócio'}
+            {editingBusinessUnit ? 'Editar loja' : 'Cadastro de loja'}
           </h1>
         </div>
       </div>
@@ -148,7 +148,7 @@ const BusinessUnitCreate: React.FC<BusinessUnitCreateProps> = ({
                   setFormData({ ...formData, nomeUnidade: e.target.value })
                   setErrors({ ...errors, nomeUnidade: false })
                 }}
-                className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
               />
               {errors.nomeUnidade && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
             </div>
@@ -163,7 +163,7 @@ const BusinessUnitCreate: React.FC<BusinessUnitCreateProps> = ({
                 value={formData.telefone}
                 onChange={handlePhoneChange}
                 maxLength={15}
-                className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
               />
               {errors.telefone && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
             </div>
@@ -183,7 +183,7 @@ const BusinessUnitCreate: React.FC<BusinessUnitCreateProps> = ({
                   setFormData({ ...formData, razaoSocial: e.target.value })
                   setErrors({ ...errors, razaoSocial: false })
                 }}
-                className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
               />
               {errors.razaoSocial && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
             </div>
@@ -198,7 +198,7 @@ const BusinessUnitCreate: React.FC<BusinessUnitCreateProps> = ({
                 value={formData.cnpj}
                 onChange={handleCnpjChange}
                 maxLength={18}
-                className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
               />
               {errors.cnpj && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
             </div>
@@ -213,7 +213,7 @@ const BusinessUnitCreate: React.FC<BusinessUnitCreateProps> = ({
                 placeholder="Digite"
                 value={formData.inscricaoEstadual}
                 onChange={(e) => setFormData({ ...formData, inscricaoEstadual: e.target.value })}
-                className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
               />
             </div>
 
@@ -224,7 +224,7 @@ const BusinessUnitCreate: React.FC<BusinessUnitCreateProps> = ({
                 placeholder="Digite"
                 value={formData.inscricaoMunicipal}
                 onChange={(e) => setFormData({ ...formData, inscricaoMunicipal: e.target.value })}
-                className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
               />
             </div>
           </div>
@@ -238,7 +238,7 @@ const BusinessUnitCreate: React.FC<BusinessUnitCreateProps> = ({
                 placeholder="Digite"
                 value={formData.ramoAtividade}
                 onChange={(e) => setFormData({ ...formData, ramoAtividade: e.target.value })}
-                className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
               />
             </div>
           </div>
@@ -255,7 +255,7 @@ const BusinessUnitCreate: React.FC<BusinessUnitCreateProps> = ({
                 value={formData.cep}
                 onChange={handleCepChange}
                 maxLength={9}
-                className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
               />
               {errors.cep && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
             </div>
@@ -275,7 +275,7 @@ const BusinessUnitCreate: React.FC<BusinessUnitCreateProps> = ({
                   setFormData({ ...formData, endereco: e.target.value })
                   setErrors({ ...errors, endereco: false })
                 }}
-                className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
               />
               {errors.endereco && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
             </div>
@@ -292,7 +292,7 @@ const BusinessUnitCreate: React.FC<BusinessUnitCreateProps> = ({
                   setFormData({ ...formData, numero: e.target.value })
                   setErrors({ ...errors, numero: false })
                 }}
-                className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
               />
               {errors.numero && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
             </div>
@@ -304,7 +304,7 @@ const BusinessUnitCreate: React.FC<BusinessUnitCreateProps> = ({
                 placeholder="Digite"
                 value={formData.complemento}
                 onChange={(e) => setFormData({ ...formData, complemento: e.target.value })}
-                className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
               />
             </div>
           </div>
@@ -323,7 +323,7 @@ const BusinessUnitCreate: React.FC<BusinessUnitCreateProps> = ({
                   setFormData({ ...formData, bairro: e.target.value })
                   setErrors({ ...errors, bairro: false })
                 }}
-                className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
               />
               {errors.bairro && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
             </div>
@@ -341,7 +341,7 @@ const BusinessUnitCreate: React.FC<BusinessUnitCreateProps> = ({
                   setErrors({ ...errors, estado: false })
                 }}
                 maxLength={2}
-                className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
               />
               {errors.estado && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
             </div>
@@ -358,7 +358,7 @@ const BusinessUnitCreate: React.FC<BusinessUnitCreateProps> = ({
                   setFormData({ ...formData, cidade: e.target.value })
                   setErrors({ ...errors, cidade: false })
                 }}
-                className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
               />
               {errors.cidade && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
             </div>
@@ -372,7 +372,7 @@ const BusinessUnitCreate: React.FC<BusinessUnitCreateProps> = ({
               value={formData.observacao}
               onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
               rows={4}
-              className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500 resize-none"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500 resize-none"
             />
           </div>
 

@@ -8,8 +8,11 @@ interface DatePickerProps {
   className?: string
   error?: boolean
   disabled?: boolean
-  ref?: React.Ref<HTMLInputElement>
   autoOpen?: boolean
+  openOnFocus?: boolean
+  enterSelectsToday?: boolean
+  nextRef?: React.RefObject<HTMLElement | null>
+  calendarAlign?: 'left' | 'right'
 }
 
 const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(({
@@ -19,13 +22,32 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(({
   className = '',
   error = false,
   disabled = false,
-  autoOpen = false
+  autoOpen = false,
+  openOnFocus = true,
+  enterSelectsToday = true,
+  nextRef,
+  calendarAlign = 'left'
 }, ref) => {
   const [showCalendar, setShowCalendar] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [yearInput, setYearInput] = useState(new Date().getFullYear().toString())
   const calendarRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const hasHandledInitialAutoOpen = useRef(false)
+
+  const setInputRefs = (node: HTMLInputElement | null) => {
+    inputRef.current = node
+
+    if (typeof ref === 'function') {
+      ref(node)
+      return
+    }
+
+    if (ref) {
+      (ref as React.MutableRefObject<HTMLInputElement | null>).current = node
+    }
+  }
 
   // Fecha o calendário ao clicar fora
   useEffect(() => {
@@ -44,15 +66,29 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(({
     }
   }, [showCalendar])
 
-  // Abre o calendário automaticamente quando autoOpen muda para true
+  // autoOpen e para abertura programatica (ex.: encadear datas),
+  // mas nao deve abrir automaticamente no carregamento inicial.
   useEffect(() => {
-    if (autoOpen && !showCalendar) {
+    if (!hasHandledInitialAutoOpen.current) {
+      hasHandledInitialAutoOpen.current = true
+      return
+    }
+
+    if (autoOpen) {
       setShowCalendar(true)
     }
-  }, [autoOpen, showCalendar])
+  }, [autoOpen])
 
   // Atualiza selectedDate quando value muda
   useEffect(() => {
+    if (!value || !value.trim()) {
+      const today = new Date()
+      setSelectedDate(null)
+      setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1))
+      setYearInput(String(today.getFullYear()))
+      return
+    }
+
     if (value && value.length === 10) {
       const [day, month, year] = value.split('/')
       const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
@@ -65,12 +101,16 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(({
   }, [value])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatDate(e.target.value)
-    onChange(formatted)
+    let value = e.target.value;
+    // Só formata se não estiver no padrão DD/MM/AAAA
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
+      value = formatDate(value);
+    }
+    onChange(value);
 
     // Atualiza o calendário conforme digita
-    if (formatted.length === 10) {
-      const [day, month, year] = formatted.split('/')
+    if (value.length === 10) {
+      const [day, month, year] = value.split('/')
       const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
       if (!isNaN(date.getTime())) {
         setSelectedDate(date)
@@ -87,6 +127,42 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(({
     const year = date.getFullYear()
     onChange(`${day}/${month}/${year}`)
     setShowCalendar(false)
+
+    if (nextRef?.current && inputRef.current) {
+      focusNext(inputRef.current)
+    }
+  }
+
+  const handleSelectToday = () => {
+    const today = new Date()
+    setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1))
+    setYearInput(String(today.getFullYear()))
+    handleDateSelect(today)
+  }
+
+  const focusNext = (currentInput: HTMLInputElement) => {
+    if (nextRef?.current) {
+      setTimeout(() => nextRef.current?.focus(), 0)
+      return
+    }
+
+    const root = currentInput.closest('form, [role="dialog"], main, body') ?? document
+    const focusableElements = Array.from(
+      root.querySelectorAll<HTMLElement>(
+        'input:not([disabled]):not([type="hidden"]), button:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((element) => {
+      if (element === currentInput) return true
+      return element.offsetParent !== null
+    })
+
+    const currentIndex = focusableElements.indexOf(currentInput)
+    if (currentIndex === -1) return
+
+    const next = focusableElements.slice(currentIndex + 1).find((element) => !element.hasAttribute('disabled'))
+    if (!next) return
+
+    setTimeout(() => next.focus(), 0)
   }
 
   const prevMonth = () => {
@@ -108,22 +184,35 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(({
   }
 
   const handleInputFocus = () => {
-    if (autoOpen && !showCalendar) {
+    if (openOnFocus && !showCalendar) {
       setShowCalendar(true)
     }
+  }
+
+  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'Enter') return
+
+    event.preventDefault()
+
+    if (enterSelectsToday) {
+      handleSelectToday()
+    }
+
+    focusNext(event.currentTarget)
   }
 
   return (
     <div className="relative inline-block w-full" ref={calendarRef}>
       <input
-        ref={ref}
+        ref={setInputRefs}
         type="text"
         value={value}
         onChange={handleInputChange}
         onFocus={handleInputFocus}
+        onKeyDown={handleInputKeyDown}
         placeholder={placeholder}
         disabled={disabled}
-        className={`w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 pr-10 ${className} ${error ? 'border-red-500' : ''} ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
+        className={`w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 pr-10 ${className} ${error ? 'border-red-500' : ''} ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
       />
       <button
         type="button"
@@ -143,7 +232,10 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(({
 
       {/* Calendário */}
       {showCalendar && (
-        <div className="absolute top-full left-0 mt-2 bg-white shadow-xl rounded-lg p-4 z-50 border border-gray-200" style={{minWidth: '300px', zIndex: 9999}}>
+        <div
+          className={`absolute top-full mt-2 bg-white shadow-xl rounded-lg p-4 z-50 border border-gray-200 ${calendarAlign === 'right' ? 'right-0' : 'left-0'}`}
+          style={{ minWidth: '300px', zIndex: 9999 }}
+        >
           {/* Cabeçalho do calendário */}
           <div className="flex items-center justify-between mb-4">
             <button

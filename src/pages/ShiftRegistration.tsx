@@ -26,6 +26,13 @@ const ShiftRegistration: React.FC<ShiftRegistrationProps> = ({ onNavigate, editi
   const [endWork, setEndWork] = useState("");
   const [startBreak, setStartBreak] = useState("");
   const [endBreak, setEndBreak] = useState("");
+  const [daysPreset, setDaysPreset] = useState("Dias úteis");
+  const [step2Errors, setStep2Errors] = useState({
+    startWork: false,
+    endWork: false,
+    startBreak: false,
+    endBreak: false,
+  });
   const [weekData, setWeekData] = useState([
     { day: "Dom", start: "00:00", end: "00:00", breakStart: "", breakEnd: "", mark: false },
     { day: "Seg", start: startWork, end: endWork, breakStart: startBreak, breakEnd: endBreak, mark: true },
@@ -77,6 +84,57 @@ const ShiftRegistration: React.FC<ShiftRegistrationProps> = ({ onNavigate, editi
     setter(masked);
   }
 
+  function isValidTime(value: string) {
+    return /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(value);
+  }
+
+  function validateStep2Schedule() {
+    const nextErrors = {
+      startWork: !isValidTime(startWork),
+      endWork: !isValidTime(endWork),
+      startBreak: !isValidTime(startBreak),
+      endBreak: !isValidTime(endBreak),
+    };
+
+    setStep2Errors(nextErrors);
+    return !Object.values(nextErrors).some(Boolean);
+  }
+
+  function saveShift(updates: Record<string, any>) {
+    const turnos = JSON.parse(localStorage.getItem('turnos') || '[]');
+    const originalCode = editingShift?.codigo || code;
+    const existingIndex = turnos.findIndex((t: any) => t.codigo === originalCode);
+    const today = new Date().toLocaleDateString('pt-BR');
+    const updatedAt = new Date().toLocaleString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+
+    const baseShift = existingIndex >= 0 ? turnos[existingIndex] : {};
+
+    const nextShift = {
+      ...baseShift,
+      codigo: code,
+      nome: name,
+      tipo: type,
+      regras: followCompanyRules ? 'Segue' : 'Não segue',
+      observacao: observation,
+      ignoreHolidays,
+      criadoEm: baseShift.criadoEm || today,
+      atualizadoEm: updatedAt,
+      ...updates,
+    };
+
+    if (existingIndex >= 0) {
+      turnos[existingIndex] = nextShift;
+    } else {
+      turnos.push(nextShift);
+    }
+
+    localStorage.setItem('turnos', JSON.stringify(turnos));
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     // Validação dos campos obrigatórios
@@ -86,17 +144,7 @@ const ShiftRegistration: React.FC<ShiftRegistrationProps> = ({ onNavigate, editi
     }
     // Se for Sem HR Fixa ou Livre/Folguista, salva e navega
     if ((type === 'Sem HR Fixa' || type === 'Livre/Folguista') && onNavigate) {
-      const turnos = JSON.parse(localStorage.getItem('turnos') || '[]');
-      turnos.push({
-        codigo: code,
-        nome: name,
-        tipo: type,
-        criadoEm: new Date().toLocaleDateString('pt-BR'),
-        regras: followCompanyRules ? 'Segue' : 'Não segue',
-        observacao: observation,
-        ignoreHolidays,
-      });
-      localStorage.setItem('turnos', JSON.stringify(turnos));
+      saveShift({});
       onNavigate('turnos');
       return;
     }
@@ -107,6 +155,41 @@ const ShiftRegistration: React.FC<ShiftRegistrationProps> = ({ onNavigate, editi
     }
     // Caso contrário, segue fluxo normal (exemplo: alert)
     alert('Turno cadastrado com sucesso!');
+  }
+
+  function isDayIncludedByPreset(preset: string, dayIndex: number) {
+    // weekData indexes: 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab
+    if (preset === 'Todos os dias') return true;
+    if (preset === 'Dias úteis') return dayIndex >= 1 && dayIndex <= 5;
+    if (preset === 'Seg - Sab') return dayIndex >= 1 && dayIndex <= 6;
+    if (preset === 'Fim de semana') return dayIndex === 0 || dayIndex === 6;
+    return false;
+  }
+
+  function buildWeekDataFromStepTwo() {
+    return weekData.map((item, idx) => {
+      const included = isDayIncludedByPreset(daysPreset, idx);
+
+      if (included) {
+        return {
+          ...item,
+          start: startWork || '00:00',
+          end: endWork || '00:00',
+          breakStart: startBreak || '00:00',
+          breakEnd: endBreak || '00:00',
+          mark: true,
+        };
+      }
+
+      return {
+        ...item,
+        start: '00:00',
+        end: '00:00',
+        breakStart: '00:00',
+        breakEnd: '00:00',
+        mark: false,
+      };
+    });
   }
 
   return (
@@ -190,10 +273,11 @@ const ShiftRegistration: React.FC<ShiftRegistrationProps> = ({ onNavigate, editi
                 Código do turno <span className="text-red-500">*</span>
               </label>
               <input
-                className="w-full px-4 py-2 rounded border border-gray-200 bg-gray-50 text-sm cursor-not-allowed"
+                className="w-full px-4 py-2 rounded border border-gray-200 bg-gray-200 text-sm cursor-not-allowed disabled:cursor-not-allowed opacity-70"
                 placeholder="Código gerado automaticamente"
                 value={code}
                 readOnly
+                disabled
               />
             </div>
             <div>
@@ -273,10 +357,11 @@ const ShiftRegistration: React.FC<ShiftRegistrationProps> = ({ onNavigate, editi
             <div>
               <label className="block text-sm font-medium mb-1">Início do expediente</label>
               <input
-                className="w-full px-4 py-2 rounded bg-gray-100 text-gray-700"
+                className={`w-full px-4 py-2 rounded text-gray-700 ${step2Errors.startWork ? 'bg-red-50 border border-red-300' : 'bg-gray-100 border border-transparent'}`}
                 value={startWork}
                 onChange={e => {
                   handleTimeInput(e.target.value, setStartWork);
+                  setStep2Errors((prev) => ({ ...prev, startWork: false }));
                   if (e.target.value.length === 5) {
                     document.getElementById('endWorkInput')?.focus();
                   }
@@ -291,15 +376,17 @@ const ShiftRegistration: React.FC<ShiftRegistrationProps> = ({ onNavigate, editi
                   }
                 }}
               />
+              {step2Errors.startWork && <p className="mt-1 text-xs text-red-600">Informe um horário válido (HH:MM).</p>}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Fim do expediente</label>
               <input
                 id="endWorkInput"
-                className="w-full px-4 py-2 rounded bg-gray-100 text-gray-700"
+                className={`w-full px-4 py-2 rounded text-gray-700 ${step2Errors.endWork ? 'bg-red-50 border border-red-300' : 'bg-gray-100 border border-transparent'}`}
                 value={endWork}
                 onChange={e => {
                   handleTimeInput(e.target.value, setEndWork);
+                  setStep2Errors((prev) => ({ ...prev, endWork: false }));
                   if (e.target.value.length === 5) {
                     document.getElementById('startBreakInput')?.focus();
                   }
@@ -314,12 +401,13 @@ const ShiftRegistration: React.FC<ShiftRegistrationProps> = ({ onNavigate, editi
                   }
                 }}
               />
+              {step2Errors.endWork && <p className="mt-1 text-xs text-red-600">Informe um horário válido (HH:MM).</p>}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Dias</label>
               <Select
-                value="Dias úteis"
-                onChange={() => {}}
+                value={daysPreset}
+                onChange={(value) => setDaysPreset(String(value))}
                 options={[
                   { label: 'Dias úteis', value: 'Dias úteis' },
                   { label: 'Seg - Sab', value: 'Seg - Sab' },
@@ -334,10 +422,11 @@ const ShiftRegistration: React.FC<ShiftRegistrationProps> = ({ onNavigate, editi
               <label className="block text-sm font-medium mb-1">Início intervalo 1</label>
               <input
                 id="startBreakInput"
-                className="w-full px-4 py-2 rounded bg-gray-100 text-gray-700"
+                className={`w-full px-4 py-2 rounded text-gray-700 ${step2Errors.startBreak ? 'bg-red-50 border border-red-300' : 'bg-gray-100 border border-transparent'}`}
                 value={startBreak}
                 onChange={e => {
                   handleTimeInput(e.target.value, setStartBreak);
+                  setStep2Errors((prev) => ({ ...prev, startBreak: false }));
                   if (e.target.value.length === 5) {
                     document.getElementById('endBreakInput')?.focus();
                   }
@@ -352,15 +441,17 @@ const ShiftRegistration: React.FC<ShiftRegistrationProps> = ({ onNavigate, editi
                   }
                 }}
               />
+              {step2Errors.startBreak && <p className="mt-1 text-xs text-red-600">Informe um horário válido (HH:MM).</p>}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Fim intervalo 1</label>
               <input
                 id="endBreakInput"
-                className="w-full px-4 py-2 rounded bg-gray-100 text-gray-700"
+                className={`w-full px-4 py-2 rounded text-gray-700 ${step2Errors.endBreak ? 'bg-red-50 border border-red-300' : 'bg-gray-100 border border-transparent'}`}
                 value={endBreak}
                 onChange={e => {
                   handleTimeInput(e.target.value, setEndBreak);
+                  setStep2Errors((prev) => ({ ...prev, endBreak: false }));
                   if (e.target.value.length === 5) {
                     document.getElementById('diasSelect')?.focus();
                   }
@@ -375,23 +466,17 @@ const ShiftRegistration: React.FC<ShiftRegistrationProps> = ({ onNavigate, editi
                   }
                 }}
               />
+              {step2Errors.endBreak && <p className="mt-1 text-xs text-red-600">Informe um horário válido (HH:MM).</p>}
             </div>
           </div>
           <div className="flex justify-between">
             <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded px-6 py-2 font-semibold" onClick={() => setStep(1)}>Voltar</button>
             <button className="bg-indigo-700 hover:bg-indigo-800 text-white rounded px-6 py-2 font-semibold"
               onClick={() => {
-                // Atualiza os horários do resumo com os valores atuais
-                setWeekData(prev => prev.map((item, idx) => {
-                  if (idx === 0) return { ...item, start: "00:00", end: "00:00", breakStart: "", breakEnd: "", mark: false };
-                  return {
-                    ...item,
-                    start: startWork,
-                    end: endWork,
-                    breakStart: startBreak,
-                    breakEnd: endBreak,
-                  };
-                }));
+                if (!validateStep2Schedule()) {
+                  return;
+                }
+                setWeekData(buildWeekDataFromStepTwo());
                 setStep(3);
               }}
             >Continuar</button>
@@ -541,18 +626,9 @@ const ShiftRegistration: React.FC<ShiftRegistrationProps> = ({ onNavigate, editi
           <div className="flex justify-between mt-6">
             <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded px-6 py-2 font-semibold" onClick={() => setStep(2)}>Voltar</button>
             <button className="bg-green-600 hover:bg-green-700 text-white rounded px-6 py-2 font-semibold" onClick={() => {
-              const turnos = JSON.parse(localStorage.getItem('turnos') || '[]');
-              turnos.push({
-                codigo: code,
-                nome: name,
-                tipo: type,
-                semana: weekData,
-                criadoEm: new Date().toLocaleDateString('pt-BR'),
-                regras: followCompanyRules ? 'Segue' : 'Não segue',
-              });
-              localStorage.setItem('turnos', JSON.stringify(turnos));
+              saveShift({ semana: weekData });
               if (onNavigate) onNavigate('turnos');
-            }}>Cadastrar</button>
+            }}>{editingShift ? 'Salvar' : 'Cadastrar'}</button>
           </div>
         </div>
       )}

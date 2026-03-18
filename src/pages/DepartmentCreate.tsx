@@ -17,8 +17,6 @@ const DepartmentCreate: React.FC<DepartmentCreateProps> = ({
   onUpdateDepartment, 
   editingDepartment 
 }) => {
-  const [unitOptions, setUnitOptions] = useState<{ label: string; value: string }[]>([])
-
   // Gerar próximo código automaticamente
   const getNextCode = () => {
     if (editingDepartment) return editingDepartment.codigo
@@ -43,38 +41,14 @@ const DepartmentCreate: React.FC<DepartmentCreateProps> = ({
   const [formData, setFormData] = useState({
     codigo: getNextCode(),
     nome: editingDepartment?.nome || '',
-    unidadeNegocio: editingDepartment?.unidadeNegocio || '',
     observacao: editingDepartment?.observacao || ''
   })
-
-  useEffect(() => {
-    const options: { label: string; value: string }[] = []
-    
-    // Adicionar dados da empresa como opção principal
-    const companyDataStr = localStorage.getItem('companyData')
-    if (companyDataStr) {
-      try {
-        const companyData = JSON.parse(companyDataStr)
-        const companyName = companyData.nomeEmpresa || companyData.razaoSocial || 'Empresa Principal'
-        options.push({ label: `${companyName} (Principal)`, value: 'company-main' })
-      } catch {}
-    }
-    
-    // Adicionar unidades de negócio cadastradas
-    businessUnits.forEach(unit => {
-      const label = unit.unidadePrincipal ? `${unit.nomeUnidade} (Principal)` : unit.nomeUnidade
-      options.push({ label, value: unit.id })
-    })
-    
-    setUnitOptions(options)
-  }, [businessUnits])
 
   useEffect(() => {
     if (editingDepartment) {
       setFormData({
         codigo: editingDepartment.codigo,
         nome: editingDepartment.nome,
-        unidadeNegocio: editingDepartment.unidadeNegocio,
         observacao: editingDepartment.observacao || ''
       })
     }
@@ -82,15 +56,15 @@ const DepartmentCreate: React.FC<DepartmentCreateProps> = ({
 
   const [errors, setErrors] = useState({
     codigo: false,
-    nome: false,
-    unidadeNegocio: false
+    nome: false
   })
+
+  const standardFieldClass = 'w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-900 placeholder-gray-500'
 
   const handleSave = () => {
     const newErrors = {
       codigo: !formData.codigo,
-      nome: !formData.nome,
-      unidadeNegocio: !formData.unidadeNegocio
+      nome: !formData.nome
     }
     
     setErrors(newErrors)
@@ -103,7 +77,7 @@ const DepartmentCreate: React.FC<DepartmentCreateProps> = ({
       id: editingDepartment?.id || `dept-${Date.now()}`,
       codigo: formData.codigo,
       nome: formData.nome,
-      unidadeNegocio: formData.unidadeNegocio,
+      unidadeNegocio: editingDepartment?.unidadeNegocio || '',
       observacao: formData.observacao,
       criadoEm: editingDepartment?.criadoEm || new Date().toLocaleDateString('pt-BR')
     }
@@ -129,21 +103,18 @@ const DepartmentCreate: React.FC<DepartmentCreateProps> = ({
 
       <div className="container mx-auto px-6 py-6">
         <div className="bg-white shadow rounded-lg p-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-gray-700 text-sm mb-2">
                 Código <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                placeholder="Digite"
+                placeholder="Codigo gerado automaticamente"
                 value={formData.codigo}
-                onChange={(e) => {
-                  setFormData({ ...formData, codigo: e.target.value })
-                  setErrors({ ...errors, codigo: false })
-                }}
-                disabled={!!editingDepartment}
-                className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                readOnly
+                disabled
+                className={`${standardFieldClass} bg-gray-200 cursor-not-allowed disabled:cursor-not-allowed opacity-70`}
               />
               {errors.codigo && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
             </div>
@@ -160,27 +131,9 @@ const DepartmentCreate: React.FC<DepartmentCreateProps> = ({
                   setFormData({ ...formData, nome: e.target.value })
                   setErrors({ ...errors, nome: false })
                 }}
-                className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                className={standardFieldClass}
               />
               {errors.nome && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
-            </div>
-
-            <div>
-              <label className="block text-gray-700 text-sm mb-2">
-                Unidade de negócio <span className="text-red-500">*</span>
-              </label>
-              <Select
-                value={formData.unidadeNegocio}
-                onChange={(value) => {
-                  setFormData({ ...formData, unidadeNegocio: String(value) })
-                  setErrors({ ...errors, unidadeNegocio: false })
-                }}
-                options={unitOptions}
-                placeholder="Selecione"
-                buttonClassName="w-full px-4 py-3 bg-gray-100 border-0 rounded text-left text-gray-900"
-                menuClassName="w-full"
-              />
-              {errors.unidadeNegocio && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
             </div>
           </div>
 
@@ -191,7 +144,7 @@ const DepartmentCreate: React.FC<DepartmentCreateProps> = ({
               value={formData.observacao}
               onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
               rows={4}
-              className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500 resize-none"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500 resize-none"
             />
           </div>
 

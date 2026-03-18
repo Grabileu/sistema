@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { MoreVertical, Edit2, Trash2 } from 'lucide-react'
+import { useClickOutside } from '../hooks/useClickOutside'
 
 interface Position {
   id: string
@@ -20,16 +21,7 @@ const Positions: React.FC<PositionsProps> = ({ positions, onNavigate, onDeletePo
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpenMenuId(null)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  useClickOutside(menuRef, () => setOpenMenuId(null))
 
   const handleDelete = (id: string) => {
     if (confirm('Tem certeza que deseja excluir este cargo?')) {
@@ -45,7 +37,7 @@ const Positions: React.FC<PositionsProps> = ({ positions, onNavigate, onDeletePo
           <h1 className="text-xl font-semibold text-gray-900">Lista de cargos</h1>
           <button
             onClick={() => onNavigate?.('cadastro-cargo')}
-            className="bg-indigo-600 text-white px-6 py-2.5 rounded font-medium hover:bg-indigo-700"
+            className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-indigo-700"
           >
             Cadastrar cargo
           </button>
@@ -59,7 +51,7 @@ const Positions: React.FC<PositionsProps> = ({ positions, onNavigate, onDeletePo
               <p className="text-gray-500 text-lg mb-4">Nenhum cargo cadastrado</p>
               <button
                 onClick={() => onNavigate?.('cadastro-cargo')}
-                className="bg-indigo-600 text-white px-6 py-2.5 rounded font-medium hover:bg-indigo-700"
+                className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-indigo-700"
               >
                 Cadastrar primeiro cargo
               </button>

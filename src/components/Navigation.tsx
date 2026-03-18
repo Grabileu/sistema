@@ -7,7 +7,7 @@ interface NavigationProps {
 
 const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab }) => {
   return (
-    <div className="flex justify-center gap-8 mb-8 border-b">
+    <div className="flex justify-center gap-8 border-b">
       <button
         onClick={() => setActiveTab('controle')}
         className={`py-4 px-2 font-semibold transition ${

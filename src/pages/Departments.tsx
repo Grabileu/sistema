@@ -1,6 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef } from 'react'
 import { MoreVertical, Edit2, Trash2 } from 'lucide-react'
+import DeleteConfirmModal from '../components/DeleteConfirmModal'
 import { Department } from '../App'
+import { useClickOutside } from '../hooks/useClickOutside'
 
 interface DepartmentsProps {
   onNavigate?: (route: string) => void
@@ -16,52 +18,38 @@ const Departments: React.FC<DepartmentsProps> = ({
   onEditDepartment 
 }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; nome: string } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpenMenuId(null)
-      }
-    }
+  useClickOutside(menuRef, () => setOpenMenuId(null))
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este departamento?')) {
-      onDeleteDepartment?.(id)
-      setOpenMenuId(null)
-    }
+  const handleDelete = (id: string, nome: string) => {
+    setPendingDelete({ id, nome })
+    setOpenMenuId(null)
   }
 
-  // Buscar nome da unidade de negócio
-  const getUnitName = (unitId: string) => {
-    if (unitId === 'company-main') {
-      const companyDataStr = localStorage.getItem('companyData')
-      if (companyDataStr) {
-        try {
-          const companyData = JSON.parse(companyDataStr)
-          return companyData.nomeEmpresa || companyData.razaoSocial || 'Empresa Principal'
-        } catch {}
-      }
-      return 'Empresa Principal'
-    }
-    
-    const businessUnitsStr = localStorage.getItem('businessUnits')
-    if (businessUnitsStr) {
-      try {
-        const businessUnits = JSON.parse(businessUnitsStr)
-        const unit = businessUnits.find((u: any) => u.id === unitId)
-        return unit?.nomeUnidade || '-'
-      } catch {}
-    }
-    return '-'
+  const confirmDelete = () => {
+    if (!pendingDelete) return
+    onDeleteDepartment?.(pendingDelete.id)
+    setPendingDelete(null)
+  }
+
+  const cancelDelete = () => {
+    setPendingDelete(null)
   }
 
   return (
     <div className="bg-gray-50 min-h-screen">
+      {pendingDelete && (
+        <DeleteConfirmModal
+          title="Excluir departamento"
+          description="Tem certeza que deseja excluir o departamento abaixo?"
+          itemName={pendingDelete.nome}
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+        />
+      )}
+
       <div className="bg-white border-b">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <h1 className="text-xl font-semibold text-gray-900">Lista de departamentos</h1>
@@ -90,9 +78,6 @@ const Departments: React.FC<DepartmentsProps> = ({
                   Nome
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Unidade de negócio
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Criado em
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
@@ -103,7 +88,7 @@ const Departments: React.FC<DepartmentsProps> = ({
             <tbody className="bg-white divide-y divide-gray-200">
               {departments.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-gray-500">
+                  <td colSpan={4} className="px-6 py-10 text-center text-gray-500">
                     Nenhum departamento cadastrado
                   </td>
                 </tr>
@@ -117,9 +102,6 @@ const Departments: React.FC<DepartmentsProps> = ({
                       <span className="text-sm text-indigo-600 cursor-pointer hover:text-indigo-800">
                         {dept.nome}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {getUnitName(dept.unidadeNegocio)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {dept.criadoEm}
@@ -146,7 +128,7 @@ const Departments: React.FC<DepartmentsProps> = ({
                               Editar
                             </button>
                             <button
-                              onClick={() => handleDelete(dept.id)}
+                              onClick={() => handleDelete(dept.id, dept.nome)}
                               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 rounded-b-lg"
                             >
                               <Trash2 size={16} />

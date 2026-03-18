@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { formatCEP, formatCNPJ, formatPhone } from '../utils/formatters'
+import { formatCEP, formatCNPJ, formatPhone, isValidCNPJ } from '../utils/formatters'
 import { CheckCircle } from 'lucide-react'
 
 interface CompanyDataProps {
@@ -95,11 +95,12 @@ const CompanyData: React.FC<CompanyDataProps> = () => {
   }
 
   const handleSave = () => {
+    const cnpjValido = isValidCNPJ(formData.cnpj || '');
     const newErrors = {
       email: !formData.email,
       nomeEmpresa: !formData.nomeEmpresa,
       razaoSocial: !formData.razaoSocial,
-      cnpj: !formData.cnpj,
+      cnpj: !formData.cnpj || !cnpjValido,
       telefone: !formData.telefone,
       cep: !formData.cep,
       endereco: !formData.endereco,
@@ -108,20 +109,13 @@ const CompanyData: React.FC<CompanyDataProps> = () => {
       estado: !formData.estado,
       cidade: !formData.cidade
     }
-    
     setErrors(newErrors)
-    
     if (Object.values(newErrors).some(error => error)) {
       return
     }
-    
     // Mostrar animação de sucesso
     setShowSuccess(true)
-    
-    // Desaparecer após 3 segundos
-    setTimeout(() => {
-      setShowSuccess(false)
-    }, 3000)
+    setTimeout(() => setShowSuccess(false), 2000)
   }
 
   return (
@@ -166,7 +160,7 @@ const CompanyData: React.FC<CompanyDataProps> = () => {
                       setFormData({ ...formData, razaoSocial: e.target.value })
                       setErrors({ ...errors, razaoSocial: false })
                     }}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
                   />
                   {errors.razaoSocial && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
                 </div>
@@ -183,7 +177,7 @@ const CompanyData: React.FC<CompanyDataProps> = () => {
                       setFormData({ ...formData, nomeEmpresa: e.target.value })
                       setErrors({ ...errors, nomeEmpresa: false })
                     }}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
                   />
                   {errors.nomeEmpresa && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
                 </div>
@@ -200,7 +194,7 @@ const CompanyData: React.FC<CompanyDataProps> = () => {
                       setFormData({ ...formData, email: e.target.value })
                       setErrors({ ...errors, email: false })
                     }}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
                   />
                   {errors.email && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
                 </div>
@@ -215,9 +209,13 @@ const CompanyData: React.FC<CompanyDataProps> = () => {
                     value={formData.cnpj}
                     onChange={handleCnpjChange}
                     maxLength={18}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
                   />
-                  {errors.cnpj && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
+                  {errors.cnpj && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {formData.cnpj && formData.cnpj.replace(/\D/g, '').length === 14 ? 'CNPJ inválido' : 'Este campo é obrigatório'}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -227,7 +225,7 @@ const CompanyData: React.FC<CompanyDataProps> = () => {
                     placeholder="Digite"
                     value={formData.inscricaoEstadual}
                     onChange={(e) => setFormData({ ...formData, inscricaoEstadual: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
                   />
                 </div>
 
@@ -238,7 +236,7 @@ const CompanyData: React.FC<CompanyDataProps> = () => {
                     placeholder="Digite"
                     value={formData.inscricaoMunicipal}
                     onChange={(e) => setFormData({ ...formData, inscricaoMunicipal: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
                   />
                 </div>
 
@@ -249,7 +247,7 @@ const CompanyData: React.FC<CompanyDataProps> = () => {
                     placeholder="Digite"
                     value={formData.ramoAtividade}
                     onChange={(e) => setFormData({ ...formData, ramoAtividade: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
                   />
                 </div>
               </div>
@@ -269,7 +267,7 @@ const CompanyData: React.FC<CompanyDataProps> = () => {
                     value={formData.telefone}
                     onChange={handlePhoneChange}
                     maxLength={15}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
                   />
                   {errors.telefone && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
                 </div>
@@ -284,7 +282,7 @@ const CompanyData: React.FC<CompanyDataProps> = () => {
                     value={formData.cep}
                     onChange={handleCepChange}
                     maxLength={9}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
                   />
                 </div>
 
@@ -300,7 +298,7 @@ const CompanyData: React.FC<CompanyDataProps> = () => {
                       setFormData({ ...formData, endereco: e.target.value })
                       setErrors({ ...errors, endereco: false })
                     }}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
                   />
                   {errors.endereco && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
                 </div>
@@ -317,7 +315,7 @@ const CompanyData: React.FC<CompanyDataProps> = () => {
                       setFormData({ ...formData, numero: e.target.value })
                       setErrors({ ...errors, numero: false })
                     }}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
                   />
                   {errors.numero && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
                 </div>
@@ -329,7 +327,7 @@ const CompanyData: React.FC<CompanyDataProps> = () => {
                     placeholder="Digite"
                     value={formData.complemento}
                     onChange={(e) => setFormData({ ...formData, complemento: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
                   />
                 </div>
 
@@ -346,7 +344,7 @@ const CompanyData: React.FC<CompanyDataProps> = () => {
                         setFormData({ ...formData, bairro: e.target.value })
                         setErrors({ ...errors, bairro: false })
                       }}
-                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                      className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
                     />
                     {errors.bairro && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
                   </div>
@@ -363,7 +361,7 @@ const CompanyData: React.FC<CompanyDataProps> = () => {
                         setFormData({ ...formData, estado: e.target.value })
                         setErrors({ ...errors, estado: false })
                       }}
-                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                      className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
                     />
                     {errors.estado && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
                   </div>
@@ -380,7 +378,7 @@ const CompanyData: React.FC<CompanyDataProps> = () => {
                         setFormData({ ...formData, cidade: e.target.value })
                         setErrors({ ...errors, cidade: false })
                       }}
-                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded text-gray-900 placeholder-gray-500"
+                      className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
                     />
                     {errors.cidade && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
                   </div>
