@@ -870,7 +870,7 @@ function App() {
       return nextEmployees
     })
     setEditingEmployeeId(null)
-    setCurrentPage('funcionarios-ativos')
+    // Não redireciona ao editar perfil, só ao cadastrar novo funcionário
   }
 
   const handleDeleteEmployee = (id: string) => {
@@ -1466,7 +1466,7 @@ function App() {
         {currentPage.startsWith('perfil-funcionario-') && (() => {
           const id = currentPage.replace('perfil-funcionario-', '');
           const funcionario = employees.find(e => e.id === id) || null;
-          return <PerfilFuncionario funcionario={funcionario} />;
+          return <PerfilFuncionario funcionario={funcionario} onUpdateEmployee={handleUpdateEmployee} />;
         })()}
         <SwitchTransition mode="out-in">
           <CSSTransition

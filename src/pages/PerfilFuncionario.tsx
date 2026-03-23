@@ -1,14 +1,33 @@
 import React, { useState } from 'react';
+
+// Busca equipes reais do localStorage
+function getEquipesFromStorage() {
+  try {
+    const equipesStr = localStorage.getItem('teams');
+    if (equipesStr) {
+      return JSON.parse(equipesStr);
+    }
+  } catch {}
+  return [];
+}
+
+function getDepartamentoDaEquipe(equipeNome) {
+  const equipes = getEquipesFromStorage();
+  const equipe = equipes.find(eq => eq.nome === equipeNome);
+  return equipe ? equipe.departamentoNome : '-';
+}
 import DatePicker from '../components/DatePicker';
 import Select from '../components/Select';
 import { Employee } from '../App';
+import { formatCurrency, formatCPF } from '../utils/formatters';
 
 interface PerfilFuncionarioProps {
   funcionario?: Employee | null;
+  onUpdateEmployee?: (employee: Employee) => void;
 }
 
 
-export default function PerfilFuncionario({ funcionario }: PerfilFuncionarioProps) {
+export default function PerfilFuncionario({ funcionario, onUpdateEmployee }: PerfilFuncionarioProps) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showEditProfissional, setShowEditProfissional] = useState(false);
   const [abaAtiva, setAbaAtiva] = useState<'principal' | 'profissional' | 'endereco' | 'dependentes'>('principal');
@@ -52,14 +71,15 @@ export default function PerfilFuncionario({ funcionario }: PerfilFuncionarioProp
     return <div className="p-8 text-center text-gray-500">Funcionário não encontrado.</div>;
   }
 
-  // Simulação de dados extras para visual
-  const departamento = funcionarioView.equipe ? 'Departamento Administrativo' : '-';
+  // Busca o departamento correto da equipe do funcionário (dados reais)
+  const departamento = funcionarioView.equipe ? getDepartamentoDaEquipe(funcionarioView.equipe) : '-';
   const unidade = funcionarioView.loja || 'Unidade de Negócio 01';
   const perfilCriado = funcionarioView.dataAdmissao || '06/02/2026';
   const ultimoAcesso = funcionarioView.ultimoAcesso || '-';
   const idInterno = funcionarioView.id || '1493045D829A4E93C6348CD39BC4548';
   const genero = funcionarioView.genero || 'Masculino';
   const dataNascimento = funcionarioView.dataNascimento || '16/04/2005';
+
 
   // Estados locais para selects do modal
   const [editNome, setEditNome] = useState<string>(funcionarioView?.nomeCompleto || '');
@@ -76,6 +96,8 @@ export default function PerfilFuncionario({ funcionario }: PerfilFuncionarioProp
   const [editRG, setEditRG] = useState<string>(funcionarioView?.rg || '');
   const [editCNH, setEditCNH] = useState<string>(funcionarioView?.cnh || '');
   const [editObsGerais, setEditObsGerais] = useState<string>(funcionarioView?.obsGerais || '');
+  // Estado para CPF editável com máscara
+  const [editCPF, setEditCPF] = useState<string>(funcionarioView?.cpf || '');
 
   const [editDataExameAdmissional, setEditDataExameAdmissional] = useState<string>(funcionarioView?.dataExameAdmissional || '');
 
@@ -96,6 +118,18 @@ export default function PerfilFuncionario({ funcionario }: PerfilFuncionarioProp
     return onlyNums.slice(0, 7).replace(/(\d{2})(\d{0,5})/, "$1.$2");
   }
 
+  // Impede rolagem do body quando qualquer modal de edição está aberto
+  React.useEffect(() => {
+    if (showEditProfissional || showEditModal || showEditFormacao || showEditNecessidade) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showEditProfissional, showEditModal, showEditFormacao, showEditNecessidade]);
+
   return (
     <>
       {/* Modal de edição de informações pessoais */}
@@ -111,23 +145,31 @@ export default function PerfilFuncionario({ funcionario }: PerfilFuncionarioProp
             </div>
             <form onSubmit={e => {
               e.preventDefault();
-              setFuncionarioView((prev) => prev ? {
-                ...prev,
-                nomeCompleto: editNome,
-                corRaca: editCorRaca,
-                genero: editGenero,
-                estadoCivil: editEstadoCivil,
-                categoria: editCategoria,
-                mae: editMae,
-                pai: editPai,
-                nacionalidade: editNacionalidade,
-                paisNascimento: editPaisNascimento,
-                estadoNascimento: editEstadoNascimento,
-                cidadeNascimento: editCidadeNascimento,
-                rg: editRG,
-                cnh: editCNH,
-                obsGerais: editObsGerais,
-              } : prev);
+              setFuncionarioView((prev) => {
+                if (!prev) return prev;
+                const updated = {
+                  ...prev,
+                  nomeCompleto: editNome,
+                  cpf: editCPF,
+                  corRaca: editCorRaca,
+                  genero: editGenero,
+                  estadoCivil: editEstadoCivil,
+                  categoria: editCategoria,
+                  mae: editMae,
+                  pai: editPai,
+                  nacionalidade: editNacionalidade,
+                  paisNascimento: editPaisNascimento,
+                  estadoNascimento: editEstadoNascimento,
+                  cidadeNascimento: editCidadeNascimento,
+                  rg: editRG,
+                  cnh: editCNH,
+                  obsGerais: editObsGerais,
+                };
+                if (onUpdateEmployee) {
+                  onUpdateEmployee(updated);
+                }
+                return updated;
+              });
               setShowEditModal(false);
             }}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
@@ -137,8 +179,16 @@ export default function PerfilFuncionario({ funcionario }: PerfilFuncionarioProp
                 </div>
                 <div>
                   <label className="block text-gray-700 text-sm mb-1 font-medium">CPF <span className="text-red-500">*</span></label>
-                  <input type="text" defaultValue={funcionario?.cpf} className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm" />
+                  <input
+                    type="text"
+                    value={editCPF}
+                    onChange={e => setEditCPF(formatCPF(e.target.value))}
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm"
+                    maxLength={14}
+                  />
                 </div>
+
+
                 <div>
                   <label className="block text-gray-700 text-sm mb-1 font-medium">RG</label>
                   <input type="text" value={editRG} onChange={e => setEditRG(e.target.value)} className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm" />
@@ -401,23 +451,35 @@ export default function PerfilFuncionario({ funcionario }: PerfilFuncionarioProp
             </div>
             <form onSubmit={e => {
               e.preventDefault();
-              setFuncionarioView((prev) => prev ? {
-                ...prev,
-                vinculo: editVinculo,
-                cargo: editCargo,
-                equipe: editEquipe,
-                turno: editTurno,
-                departamento: editDepartamento,
-                loja: editUnidadeNegocio,
-                primeiroEmprego: editPrimeiroEmprego,
-                cargoConfianca: editCargoConfianca,
-                remuneracao: editRemuneracao,
-                frequenciaPagamento: editFrequenciaPagamento,
-                mesmoSalarioDesde: editMesmoSalarioDesde,
-                estabilidade: editEstabilidade,
-                seguroDesemprego: editSeguroDesemprego,
-                aposentado: editAposentado,
-              } : prev);
+              setFuncionarioView((prev) => {
+                if (!prev) return prev;
+                const updated = {
+                  ...prev,
+                  vinculo: editVinculo,
+                  cargo: editCargo,
+                  equipe: editEquipe,
+                  turno: editTurno,
+                  departamento: editDepartamento,
+                  loja: editUnidadeNegocio,
+                  primeiroEmprego: editPrimeiroEmprego,
+                  cargoConfianca: editCargoConfianca,
+                  remuneracao: editRemuneracao,
+                  frequenciaPagamento: editFrequenciaPagamento,
+                  mesmoSalarioDesde: editMesmoSalarioDesde,
+                  estabilidade: editEstabilidade,
+                  seguroDesemprego: editSeguroDesemprego,
+                  aposentado: editAposentado,
+                  dataAdmissao: editDataAdmissao,
+                  dataExameAdmissional: editDataExameAdmissional,
+                  pisPasep: editPISPasep,
+                  carteiraTrabalho: editCarteiraTrabalho,
+                  registroProfissional: editRegistroProfissional,
+                };
+                if (onUpdateEmployee) {
+                  onUpdateEmployee(updated);
+                }
+                return updated;
+              });
               setShowEditProfissional(false);
             }}>
               <div className="mb-6">
@@ -472,27 +534,82 @@ export default function PerfilFuncionario({ funcionario }: PerfilFuncionarioProp
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                 <div>
                   <label className="block text-gray-700 text-sm mb-1 font-medium">Vínculo</label>
-                  <Select value={editVinculo} onChange={v => setEditVinculo(String(v))} options={[{label:'Selecione',value:''}]} />
+                  <Select
+                    value={editVinculo}
+                    onChange={v => setEditVinculo(String(v))}
+                    options={[
+                      { label: 'Selecione', value: '' },
+                      { label: 'Carteira Assinada (CLT)', value: 'clt' },
+                      { label: 'Contrato PJ', value: 'pj' },
+                      { label: 'Jovem Aprendiz', value: 'jovem_aprendiz' },
+                      { label: 'Estágio', value: 'estagio' },
+                      { label: 'Trabalhador autônomo', value: 'autonomo' },
+                      { label: 'Empregado doméstico', value: 'empregado_domestico' },
+                      { label: 'Trabalho voluntário', value: 'voluntario' },
+                      { label: 'Trabalho eventual', value: 'eventual' },
+                      { label: 'Trabalhador avulso', value: 'avulso' },
+                      { label: 'Temporário', value: 'temporario' },
+                      { label: 'Sócio', value: 'socio' },
+                      { label: 'Diretor estatutário', value: 'diretor_estatutario' },
+                      { label: 'Trabalhador rural', value: 'rural' },
+                      { label: 'Teletrabalho (Home Office)', value: 'home_office' },
+                    ]}
+                  />
                 </div>
                 <div>
                   <label className="block text-gray-700 text-sm mb-1 font-medium">Cargo *</label>
-                  <input type="text" value={editCargo} readOnly className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm cursor-not-allowed" />
+                  <input
+                    type="text"
+                    value={funcionarioView?.cargo || ''}
+                    readOnly
+                    disabled
+                    tabIndex={-1}
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm cursor-not-allowed opacity-70"
+                  />
                 </div>
                 <div>
                   <label className="block text-gray-700 text-sm mb-1 font-medium">Equipe *</label>
-                  <input type="text" value={editEquipe} readOnly className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm cursor-not-allowed" />
+                  <input
+                    type="text"
+                    value={funcionarioView?.equipe || ''}
+                    readOnly
+                    disabled
+                    tabIndex={-1}
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm cursor-not-allowed opacity-70"
+                  />
                 </div>
                 <div>
                   <label className="block text-gray-700 text-sm mb-1 font-medium">Turno *</label>
-                  <input type="text" value={editTurno} readOnly className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm cursor-not-allowed" />
+                  <input
+                    type="text"
+                    value={funcionarioView?.turno || ''}
+                    readOnly
+                    disabled
+                    tabIndex={-1}
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm cursor-not-allowed opacity-70"
+                  />
                 </div>
                 <div>
                   <label className="block text-gray-700 text-sm mb-1 font-medium">Departamento *</label>
-                  <input type="text" value={editDepartamento} readOnly className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm cursor-not-allowed" />
+                  <input
+                    type="text"
+                    value={departamento}
+                    readOnly
+                    disabled
+                    tabIndex={-1}
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm cursor-not-allowed opacity-70"
+                  />
                 </div>
                 <div>
                   <label className="block text-gray-700 text-sm mb-1 font-medium">Loja</label>
-                  <input type="text" value={editLoja} readOnly className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm cursor-not-allowed" />
+                  <input
+                    type="text"
+                    value={funcionarioView?.loja || ''}
+                    readOnly
+                    disabled
+                    tabIndex={-1}
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm cursor-not-allowed opacity-70"
+                  />
                 </div>
                 <div className="col-span-full">
                   <span className="text-xs text-gray-500 italic">Esses campos só podem ser editados na tela de cadastro do funcionário.</span>
@@ -507,19 +624,57 @@ export default function PerfilFuncionario({ funcionario }: PerfilFuncionarioProp
                 </div>
                 <div>
                   <label className="block text-gray-700 text-sm mb-1 font-medium">Remuneração</label>
-                  <input type="text" value={editRemuneracao} onChange={e => setEditRemuneracao(e.target.value)} className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm" />
+                  <input
+                    type="text"
+                    value={editRemuneracao ? formatCurrency(Number(editRemuneracao.replace(/\D/g, '')) / 100) : ''}
+                    onChange={e => {
+                      // Permite apenas números e formata como centavos
+                      const raw = e.target.value.replace(/\D/g, '');
+                      setEditRemuneracao(raw);
+                    }}
+                    inputMode="numeric"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm"
+                  />
                 </div>
                 <div>
                   <label className="block text-gray-700 text-sm mb-1 font-medium">Frequência de pagamento</label>
-                  <Select value={editFrequenciaPagamento} onChange={v => setEditFrequenciaPagamento(String(v))} options={[{label:'Nenhum',value:''}]} />
+                  <Select
+                    value={editFrequenciaPagamento}
+                    onChange={v => setEditFrequenciaPagamento(String(v))}
+                    options={[
+                      { label: 'Selecione', value: '' },
+                      { label: 'Semanal', value: 'semanal' },
+                      { label: 'Quinzenal', value: 'quinzenal' },
+                      { label: 'Mensal', value: 'mensal' },
+                      { label: 'Semestral', value: 'semestral' },
+                      { label: 'Anual', value: 'anual' },
+                      { label: 'Variável', value: 'variavel' },
+                    ]}
+                  />
                 </div>
                 <div>
                   <label className="block text-gray-700 text-sm mb-1 font-medium">Mesmo salário desde</label>
-                  <input type="date" value={editMesmoSalarioDesde} onChange={e => setEditMesmoSalarioDesde(e.target.value)} className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm" />
+                  <DatePicker
+                    value={editMesmoSalarioDesde}
+                    onChange={v => setEditMesmoSalarioDesde(v)}
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm"
+                  />
                 </div>
                 <div>
                   <label className="block text-gray-700 text-sm mb-1 font-medium">Estabilidade</label>
-                  <Select value={editEstabilidade} onChange={v => setEditEstabilidade(String(v))} options={[{label:'Nenhum',value:''}]} />
+                  <Select
+                    value={editEstabilidade}
+                    onChange={v => setEditEstabilidade(String(v))}
+                    options={[
+                      { label: 'Nenhum', value: '' },
+                      { label: 'Acidente de trabalho', value: 'acidente_trabalho' },
+                      { label: 'Período gestacional', value: 'periodo_gestacional' },
+                      { label: 'Acordo coletivo', value: 'acordo_coletivo' },
+                      { label: 'Eleitos para CIPA', value: 'eleitos_cipa' },
+                      { label: 'Dirigentes sindicais', value: 'dirigentes_sindicais' },
+                      { label: 'Diretores de cooperativa', value: 'diretores_cooperativa' },
+                    ]}
+                  />
                 </div>
                 <div>
                   <label className="block text-gray-700 text-sm mb-1 font-medium">Tem seguro desemprego?</label>
@@ -565,6 +720,7 @@ export default function PerfilFuncionario({ funcionario }: PerfilFuncionarioProp
           <div className="w-full text-xs text-gray-700">
             <div className="mb-2">Código de matrícula: <span className="text-gray-900 font-medium">{funcionarioView.matricula}</span></div>
             <div className="mb-2">CPF: <span className="text-gray-900 font-medium">{funcionarioView.cpf}</span></div>
+            <div className="mb-2">Nacionalidade: <span className="text-gray-900 font-medium">{funcionarioView.nacionalidade || '-'}</span></div>
             <div className="mb-2">E-mail: <span className="text-gray-900 font-medium">{funcionarioView.email}</span></div>
             <div className="mb-2">Admissão: <span className="text-gray-900 font-medium">{funcionarioView.dataAdmissao}</span></div>
             <div className="mb-2">Turno: <span className="text-indigo-700 font-medium cursor-pointer hover:underline">{funcionarioView.turno}</span></div>
@@ -702,29 +858,30 @@ export default function PerfilFuncionario({ funcionario }: PerfilFuncionarioProp
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs mb-6">
                   <div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Código/Matrícula:</span> <span className="font-bold text-gray-900">#1</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Data de admissão:</span> <span className="font-bold text-gray-900">01/03/2026</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Data de início:</span> <span className="font-bold text-gray-900">16/03/2026</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Data do exame admissional:</span> <span className="font-semibold text-gray-900">-</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Cargo:</span> <span className="font-semibold text-gray-900">Cargo Administrativo</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Turno:</span> <span className="font-semibold text-gray-900">TESTE</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Equipe:</span> <span className="font-semibold text-gray-900">TESTANDO</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Departamento:</span> <span className="font-semibold text-gray-900">REPOSIÇÃO</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Unidade de Negócio:</span> <span className="font-semibold text-gray-900">Unidade de Negócio 01</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">PIS/PASEP:</span> <span className="font-semibold text-gray-900">-</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Nº Carteira de Trabalho:</span> <span className="font-semibold text-gray-900">-</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Registro profissional:</span> <span className="font-semibold text-gray-900">-</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Código/Matrícula:</span> <span className="font-bold text-gray-900">{funcionarioView.matricula || '-'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Data de admissão:</span> <span className="font-bold text-gray-900">{funcionarioView.dataAdmissao || '-'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Data de início:</span> <span className="font-bold text-gray-900">{funcionarioView.dataInicio || funcionarioView.dataAdmissao || '-'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Data do exame admissional:</span> <span className="font-semibold text-gray-900">{funcionarioView.dataExameAdmissional || '-'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Cargo:</span> <span className="font-semibold text-gray-900">{funcionarioView.cargo || '-'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Turno:</span> <span className="font-semibold text-gray-900">{funcionarioView.turno || '-'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Equipe:</span> <span className="font-semibold text-gray-900">{funcionarioView.equipe || '-'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Departamento:</span> <span className="font-semibold text-gray-900">{departamento}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Loja:</span> <span className="font-semibold text-gray-900">{funcionarioView.loja || '-'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Data do exame admissional:</span> <span className="font-semibold text-gray-900">{funcionarioView.dataExameAdmissional || '-'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">PIS/PASEP:</span> <span className="font-semibold text-gray-900">{funcionarioView.pisPasep || '-'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Nº Carteira de Trabalho:</span> <span className="font-semibold text-gray-900">{funcionarioView.carteiraTrabalho || '-'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Registro profissional:</span> <span className="font-semibold text-gray-900">{funcionarioView.registroProfissional || '-'}</span></div>
                   </div>
                   <div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Vínculo:</span> <span className="font-semibold text-gray-900">-</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Cargo de confiança?</span> <span className="font-bold text-gray-900">Não</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Primeiro emprego?</span> <span className="font-bold text-gray-900">Não</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Remuneração:</span> <span className="font-semibold text-gray-900">-</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Frequência de pagamento:</span> <span className="font-bold text-gray-900">Não informado</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Mesmo salário desde:</span> <span className="font-semibold text-gray-900">-</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Estabilidade:</span> <span className="font-semibold text-gray-900">-</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Tem seguro desemprego?</span> <span className="font-bold text-gray-900">Não</span></div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Aposentado?</span> <span className="font-bold text-gray-900">Não</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Vínculo:</span> <span className="font-semibold text-gray-900">{funcionarioView.vinculo ? funcionarioView.vinculo.charAt(0).toUpperCase() + funcionarioView.vinculo.slice(1).replace('_',' ') : '-'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Cargo de confiança?</span> <span className="font-bold text-gray-900">{funcionarioView.cargoConfianca === 'sim' ? 'Sim' : 'Não'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Primeiro emprego?</span> <span className="font-bold text-gray-900">{funcionarioView.primeiroEmprego === 'sim' ? 'Sim' : 'Não'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Remuneração:</span> <span className="font-semibold text-gray-900">{funcionarioView.remuneracao ? formatCurrency(Number(funcionarioView.remuneracao.replace(/\D/g, '')) / 100) : '-'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Frequência de pagamento:</span> <span className="font-bold text-gray-900">{funcionarioView.frequenciaPagamento ? funcionarioView.frequenciaPagamento.charAt(0).toUpperCase() + funcionarioView.frequenciaPagamento.slice(1) : 'Não informado'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Mesmo salário desde:</span> <span className="font-semibold text-gray-900">{funcionarioView.mesmoSalarioDesde || '-'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Estabilidade:</span> <span className="font-semibold text-gray-900">{funcionarioView.estabilidade ? funcionarioView.estabilidade.charAt(0).toUpperCase() + funcionarioView.estabilidade.slice(1).replace('_',' ') : '-'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Tem seguro desemprego?</span> <span className="font-bold text-gray-900">{funcionarioView.seguroDesemprego === 'sim' ? 'Sim' : 'Não'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Aposentado?</span> <span className="font-bold text-gray-900">{funcionarioView.aposentado === 'sim' ? 'Sim' : 'Não'}</span></div>
                   </div>
                 </div>
 
@@ -812,7 +969,7 @@ export default function PerfilFuncionario({ funcionario }: PerfilFuncionarioProp
                     <div className="mb-2"><span className="font-medium text-gray-600">Observações gerais:</span> <span className="font-semibold text-gray-900">{funcionarioView.obsGerais || '-'}</span></div>
                   </div>
                   <div>
-                    <div className="mb-2"><span className="font-medium text-gray-600">Nacionalidade:</span> <span className="font-bold text-gray-900">{funcionarioView.paisNascimento || '-'}</span></div>
+                    <div className="mb-2"><span className="font-medium text-gray-600">Nacionalidade:</span> <span className="font-bold text-gray-900">{funcionarioView.nacionalidade || '-'}</span></div>
                     <div className="mb-2"><span className="font-medium text-gray-600">Cor/Raça:</span> <span className="font-semibold text-gray-900">{funcionarioView.corRaca ? funcionarioView.corRaca.charAt(0).toUpperCase() + funcionarioView.corRaca.slice(1) : '-'}</span></div>
                     <div className="mb-2"><span className="font-medium text-gray-600">Data de nascimento:</span> <span className="font-bold text-gray-900">{dataNascimento}</span></div>
                     <div className="mb-2"><span className="font-medium text-gray-600">Nome da mãe:</span> <span className="font-semibold text-gray-900">{funcionarioView.mae || '-'}</span></div>
