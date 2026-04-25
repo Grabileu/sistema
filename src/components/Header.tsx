@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { Employee } from '../App'
 import { Menu, Bell, Plus, User, Search, LogOut, ChevronDown } from 'lucide-react'
 import { LoggedUser } from '../App'
 
@@ -16,6 +17,43 @@ const PERFIL_LABELS: Record<string, string> = {
 }
 
 const Header: React.FC<HeaderProps> = ({ onMenuClick, loggedUser, onLogout }) => {
+    // Autocomplete de funcionários
+    const [searchValue, setSearchValue] = useState('');
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Busca funcionários do localStorage
+    useEffect(() => {
+      if (!searchValue.trim()) {
+        setFilteredEmployees([]);
+        return;
+      }
+      const all = localStorage.getItem('employees');
+      if (!all) return;
+      try {
+        const arr: Employee[] = JSON.parse(all);
+        const term = searchValue.trim().toLowerCase();
+        setFilteredEmployees(
+          arr.filter(emp => {
+            const nomeMatch = emp.nomeCompleto.toLowerCase().includes(term);
+            const cpfMatch = emp.cpf && emp.cpf.replace(/\D/g, '').includes(term.replace(/\D/g, ''));
+            return nomeMatch || cpfMatch;
+          }).slice(0, 10)
+        );
+      } catch {}
+    }, [searchValue]);
+
+    // Fecha dropdown ao clicar fora
+    useEffect(() => {
+      const handler = (e: MouseEvent) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+          setShowDropdown(false);
+        }
+      };
+      document.addEventListener('mousedown', handler);
+      return () => document.removeEventListener('mousedown', handler);
+    }, []);
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -44,33 +82,61 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, loggedUser, onLogout }) =>
           >
             <Menu size={24} />
           </button>
-          <div className="flex items-end select-none leading-tight">
-            <span
-              className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-white via-blue-200 to-blue-400 bg-clip-text text-transparent drop-shadow-lg tracking-tight"
-              style={{ letterSpacing: '-0.04em', textShadow: '0 2px 12px rgba(0,0,0,0.12)' }}
-            >
-              GUF
-            </span>
-            <span
-              className="text-xs md:text-sm font-semibold tracking-widest text-blue-100 uppercase mb-1 ml-2 drop-shadow-sm"
-              style={{ letterSpacing: '0.35em' }}
-            >
-              Sistemas
-            </span>
+          <div className="flex items-center gap-1 select-none ml-6 md:ml-12">
+            <span className="text-3xl md:text-4xl font-extrabold tracking-tight text-white drop-shadow-lg" style={{letterSpacing: '-0.03em'}}>PontoG</span>
           </div>
         </div>
 
         {/* Centro: barra de pesquisa */}
         <div className="hidden md:flex justify-center w-full">
-          <div className="relative mx-auto w-full max-w-xl">
+          <div className="relative mx-auto w-full max-w-xl" ref={dropdownRef}>
             <input
               type="text"
               placeholder="Pesquise funcionários pelo nome ou CPF"
               className="w-full px-4 py-1 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none pr-9"
+              value={searchValue}
+              onChange={e => {
+                const value = e.target.value
+                setSearchValue(value)
+                setShowDropdown(true)
+                if (value.trim()) {
+                  window.localStorage.setItem('employeeSearchTerm', value)
+                } else {
+                  window.localStorage.removeItem('employeeSearchTerm')
+                }
+                window.dispatchEvent(new Event('storage'))
+                window.dispatchEvent(new CustomEvent('headerSearchChange', { detail: value }))
+              }}
+              onFocus={() => { if (searchValue) setShowDropdown(true); }}
             />
             <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
               <Search size={16} />
             </button>
+            {showDropdown && filteredEmployees.length > 0 && (
+              <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-[120] max-h-64 overflow-auto">
+                {filteredEmployees.map(emp => (
+                  <button
+                    key={emp.id}
+                    type="button"
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
+                    onClick={() => {
+                      setShowDropdown(false);
+                      setSearchValue('');
+                      window.localStorage.removeItem('employeeSearchTerm')
+                      window.localStorage.setItem('perfilFuncionarioId', emp.id);
+                      window.localStorage.setItem('currentPage', `perfil-funcionario-${emp.id}`);
+                      window.dispatchEvent(new Event('storage'));
+                    }}
+                  >
+                    <span className="font-semibold text-gray-900">{emp.nomeCompleto}</span>
+                    <span className="ml-2 text-xs text-gray-500">{emp.cpf}</span>
+                  </button>
+                ))}
+                {filteredEmployees.length === 10 && (
+                  <div className="px-4 py-2 text-xs text-gray-400">Mostrando os 10 primeiros resultados</div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

@@ -3,23 +3,51 @@ import ReactDOM from 'react-dom'
 import { Search } from 'lucide-react'
 import { formatCPF } from '../utils/formatters'
 
-const DismissedEmployees: React.FC = () => {
-  // Exemplo de dados de demitidos
-  const dismissed = [
-    {
-      id: 1,
-      nome: 'Sirliene Ferreira',
-      email: 'admin@example.com',
-      dataDemissao: '06/02/2026',
-      avatar: '',
-    },
-  ];
 
-  const [openMenuId, setOpenMenuId] = React.useState<number | null>(null);
+interface DismissedEmployeesProps {
+  employees: Array<{
+    id: string;
+    nomeCompleto: string;
+    email?: string;
+    dataDemissao?: string;
+    avatar?: string;
+  }>;
+}
+
+const DismissedEmployees: React.FC<DismissedEmployeesProps> = ({ employees }) => {
+  const dismissed = employees;
+
+  const [openMenuId, setOpenMenuId] = React.useState<string | null>(null);
   const [menuPosition, setMenuPosition] = React.useState<{top: number, left: number} | null>(null);
-  const [showConfirm, setShowConfirm] = React.useState<{id: number, nome: string} | null>(null);
+  const [showConfirm, setShowConfirm] = React.useState<{id: string, nome: string} | null>(null);
+  const menuBtnRefs = useRef<{[key: string]: HTMLButtonElement | null}>({});
   const [cpfFilter, setCpfFilter] = React.useState('');
-  const menuBtnRefs = useRef<{[key: number]: HTMLButtonElement | null}>({});
+
+  // Função para readmitir funcionário
+  const handleReadmit = (id: string) => {
+    // Recupera listas do localStorage
+    const employeesRaw = localStorage.getItem('employees');
+    const dismissedRaw = localStorage.getItem('dismissedEmployees');
+    let employeesArr = employeesRaw ? JSON.parse(employeesRaw) : [];
+    let dismissedArr = dismissedRaw ? JSON.parse(dismissedRaw) : [];
+    // Encontra o funcionário a readmitir
+    const idx = dismissedArr.findIndex((e: any) => e.id === id);
+    if (idx === -1) return;
+    const readmitido = { ...dismissedArr[idx] };
+    // Remove dataDemissao
+    delete readmitido.dataDemissao;
+    // Remove da lista de demitidos
+    dismissedArr = dismissedArr.filter((e: any) => e.id !== id);
+    // Adiciona de volta aos ativos
+    employeesArr.push(readmitido);
+    // Atualiza localStorage
+    localStorage.setItem('employees', JSON.stringify(employeesArr));
+    localStorage.setItem('dismissedEmployees', JSON.stringify(dismissedArr));
+    // Permanece na tela de demitidos
+    localStorage.setItem('currentPage', 'demitidos');
+    window.dispatchEvent(new Event('storage'));
+    window.location.reload();
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -99,14 +127,14 @@ const DismissedEmployees: React.FC = () => {
               <tbody className="text-gray-700">
                 {dismissed.map((d) => (
                   <tr key={d.id} className="border-b">
-                    <td className="py-4">{d.dataDemissao}</td>
+                    <td className="py-4">{d.dataDemissao || '-'}</td>
                     <td className="py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500">
-                          {d.nome.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                          {d.nomeCompleto.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-semibold text-indigo-700 hover:underline cursor-pointer">#{d.id} {d.nome}</div>
+                          <div className="font-semibold text-indigo-700 hover:underline cursor-pointer">{d.nomeCompleto}</div>
                           <div className="text-xs text-gray-500">{d.email}</div>
                         </div>
                       </div>
@@ -148,7 +176,7 @@ const DismissedEmployees: React.FC = () => {
                               setOpenMenuId(null);
                               setMenuPosition(null);
                               const demitido = dismissed.find(d => d.id === openMenuId);
-                              if (demitido) setShowConfirm({id: demitido.id, nome: demitido.nome});
+                              if (demitido) setShowConfirm({id: demitido.id, nome: demitido.nomeCompleto});
                             }}
                           >Readmitir</button>
                         </div>
@@ -165,7 +193,7 @@ const DismissedEmployees: React.FC = () => {
                           <p className="text-sm text-gray-500 mb-6">{showConfirm.nome}</p>
                           <div className="flex gap-4 mt-2">
                             <button className="px-6 py-2 rounded-full border border-gray-300 text-gray-600 font-semibold hover:bg-gray-100 transition" onClick={() => setShowConfirm(null)}>Cancelar</button>
-                            <button className="px-6 py-2 rounded-full bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700 transition" onClick={() => { setShowConfirm(null); }}>Confirmar</button>
+                            <button className="px-6 py-2 rounded-full bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700 transition" onClick={() => { setShowConfirm(null); if (showConfirm) handleReadmit(showConfirm.id); }}>Confirmar</button>
                           </div>
                         </div>
                       </div>,

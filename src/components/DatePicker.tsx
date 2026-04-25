@@ -212,7 +212,7 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(({
         onKeyDown={handleInputKeyDown}
         placeholder={placeholder}
         disabled={disabled}
-        className={`w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 pr-10 ${className} ${error ? 'border-red-500' : ''} ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
+        className={`w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm pr-10 ${className} ${error ? 'border-red-500' : ''} ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
       />
       <button
         type="button"

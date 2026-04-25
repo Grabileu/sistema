@@ -16,12 +16,19 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   onConfirm,
   onCancel,
 }) => {
+
   useEffect(() => {
     const handle = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onCancel()
     }
     document.addEventListener('keydown', handle)
-    return () => document.removeEventListener('keydown', handle)
+    if (true) {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.removeEventListener('keydown', handle)
+      document.body.style.overflow = '';
+    }
   }, [onCancel])
 
   return (
@@ -39,8 +46,8 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
               <AlertTriangle size={20} />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-              <p className="text-xs text-gray-500">Esta ação não pode ser desfeita.</p>
+              <h2 className="text-lg font-semibold text-gray-900">{title.replace(/excluir|Excluir/g, 'Demitir')}</h2>
+              <p className="text-xs text-gray-500">Você tem certeza que deseja demitir este funcionário? Você poderá readmiti-lo novamente a qualquer momento.</p>
             </div>
           </div>
           <button
@@ -70,7 +77,7 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
               className="flex items-center justify-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
             >
               <Trash2 size={16} />
-              Excluir
+              Demitir
             </button>
           </div>
         </div>

@@ -23,6 +23,7 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
     const [currentPage, setCurrentPage] = useState(1)
     const [showAdvanced, setShowAdvanced] = useState(false)
     const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+    const [headerSearchTerm, setHeaderSearchTerm] = useState<string>(() => localStorage.getItem('employeeSearchTerm') || '')
   const [pendingDelete, setPendingDelete] = useState<{ id: string; nome: string } | null>(null)
     const menuRef = useRef<HTMLDivElement>(null)
 
@@ -143,10 +144,21 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
         } else {
           setCompanyData(null)
         }
+
+        const newSearchTerm = localStorage.getItem('employeeSearchTerm') || ''
+        setHeaderSearchTerm(newSearchTerm)
       }
 
       window.addEventListener('storage', handleStorageChange)
-      return () => window.removeEventListener('storage', handleStorageChange)
+      const handleHeaderSearchChange = (e: any) => {
+        console.log('Header search change event:', e.detail)
+        setHeaderSearchTerm(e.detail || '')
+      }
+      window.addEventListener('headerSearchChange', handleHeaderSearchChange)
+      return () => {
+        window.removeEventListener('storage', handleStorageChange)
+        window.removeEventListener('headerSearchChange', handleHeaderSearchChange)
+      }
     }, [])
 
     const storeOptions = buildStoreOptions(businessUnits, companyData, 'Todos')
@@ -163,6 +175,13 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
 
     // Filter employees based on filters applied by Pesquisar
     const filteredEmployees = employees.filter((emp) => {
+      const headerTerm = headerSearchTerm.trim().toLowerCase()
+      if (headerTerm) {
+        const cpfTerm = headerTerm.replace(/\D/g, '')
+        const nameMatch = emp.nomeCompleto.toLowerCase().includes(headerTerm)
+        const cpfMatch = emp.cpf ? emp.cpf.replace(/\D/g, '').includes(cpfTerm) : false
+        if (!nameMatch && !cpfMatch) return false
+      }
       if (appliedFilters.nome && !emp.nomeCompleto.toLowerCase().includes(appliedFilters.nome.toLowerCase())) return false;
       if (appliedFilters.cargo && emp.cargo !== appliedFilters.cargo) return false;
       if (appliedFilters.equipe && emp.equipe !== appliedFilters.equipe) return false;
@@ -194,6 +213,10 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
   useEffect(() => {
     setCurrentPage((prevPage) => Math.min(prevPage, totalPages))
   }, [totalPages])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [headerSearchTerm])
 
   useClickOutside(menuRef, () => setOpenMenuId(null))
 
@@ -487,14 +510,13 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
                   <th className="py-3">Equipe</th>
                   <th className="py-3">Turno</th>
                   <th className="py-3">Departamento</th>
-                  <th className="py-3">Cargo</th>
                   <th className="py-3 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="text-gray-700">
                 {paginatedEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-gray-500">
+                    <td colSpan={7} className="py-8 text-center text-gray-500">
                       Nenhum funcionário encontrado
                     </td>
                   </tr>
@@ -516,7 +538,6 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
                       <td className="py-4">{employee.equipe || '-'}</td>
                       <td className="py-4">{employee.turno || '-'}</td>
                       <td className="py-4">{getDepartmentName(employee.equipe)}</td>
-                      <td className="py-4">{employee.cargo || '-'}</td>
                       <td className="py-4 text-right">
                         <div className="relative inline-block" ref={openMenuId === employee.id ? menuRef : null}>
                           <button

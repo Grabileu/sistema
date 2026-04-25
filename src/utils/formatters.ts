@@ -1,3 +1,20 @@
+// Recupera equipes do localStorage
+export function getEquipesFromStorage() {
+  try {
+    const equipesStr = localStorage.getItem('teams');
+    if (equipesStr) {
+      return JSON.parse(equipesStr);
+    }
+  } catch {}
+  return [];
+}
+
+// Busca o departamento de uma equipe pelo nome
+export function getDepartamentoDaEquipe(equipeNome: string) {
+  const equipes = getEquipesFromStorage();
+  const equipe = equipes.find((eq: any) => eq.nome === equipeNome);
+  return equipe ? equipe.departamentoNome : '-';
+}
 // Formata PIS/PASEP: 000.00000.00-0
 export const formatPIS = (value: string): string => {
   let numbers = value.replace(/\D/g, '');

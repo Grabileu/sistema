@@ -89,6 +89,13 @@ import Administradores from './pages/Administradores';
 import PermissoesPerfis from './pages/PermissoesPerfis';
 import { ProfilePermissions, loadProfilePermissions, saveProfilePermissions, canAccessPage, getFirstAllowedPage } from './utils/permissions';
 
+export interface SindicatoData {
+  nome: string;
+  contribui: string;
+  valor: string;
+  anexo: File | string | null;
+}
+
 export interface Employee {
   id: string;
   matricula: string;
@@ -128,6 +135,17 @@ export interface Employee {
   // Novos campos para Profissional e Financeiro
   dataInicio?: string;
   dataExameAdmissional?: string;
+  // --- CAMPOS BANCÁRIOS ---
+  formaPagamento?: string;
+  modalidade?: string;
+  tipoConta?: string;
+  banco?: string;
+  agencia?: string;
+  agenciaDigito?: string;
+  conta?: string;
+  contaDigito?: string;
+  chavePix?: string;
+  tipoChave?: string;
   pisPasep?: string;
   carteiraTrabalho?: string;
   registroProfissional?: string;
@@ -141,6 +159,27 @@ export interface Employee {
   seguroDesemprego?: string;
   aposentado?: string;
   departamento?: string;
+  periodoExperiencia?: string;
+  dataInicioExperiencia?: string;
+  dataTerminoExperiencia?: string;
+  // CAMPOS DE CONTATO
+  emailAlternativo?: string;
+  celular?: string;
+  whatsapp?: string;
+  telefone?: string;
+  telefoneAlternativo?: string;
+  linkedin?: string;
+  // Dados de sindicato
+  sindicato?: SindicatoData;
+  // --- CAMPOS DE ENDEREÇO ---
+  cep?: string;
+  endereco?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  cidade?: string;
+  estado?: string;
+  pais?: string;
 }
 
 export interface Position {
@@ -281,6 +320,38 @@ interface DeleteBlockedModalState {
 
 function App() {
   // Histórico de ações do sistema (persistente)
+    // Funcionários demitidos (persistente)
+    const [dismissedEmployees, setDismissedEmployees] = useState<Employee[]>(() => {
+      const stored = localStorage.getItem('dismissedEmployees');
+      if (stored) {
+        try {
+          return JSON.parse(stored) as Employee[];
+        } catch {
+          localStorage.removeItem('dismissedEmployees');
+        }
+      }
+      return [];
+    });
+
+    // Persistir dismissedEmployees
+    useEffect(() => {
+      localStorage.setItem('dismissedEmployees', JSON.stringify(dismissedEmployees));
+    }, [dismissedEmployees]);
+    // Função para demitir funcionário
+    const handleDismissEmployee = (employeeId: string) => {
+      setEmployees((prevEmployees) => {
+        const employeeToDismiss = prevEmployees.find(e => e.id === employeeId);
+        if (!employeeToDismiss) return prevEmployees;
+        const dataDemissao = new Date().toLocaleDateString('pt-BR');
+        setDismissedEmployees((prev) => [
+          ...prev,
+          { ...employeeToDismiss, dataDemissao },
+        ]);
+        showSuccessToast(`Funcionário \"${employeeToDismiss.nomeCompleto}\" demitido com sucesso.`);
+        return prevEmployees.filter(e => e.id !== employeeId);
+      });
+      setCurrentPage('funcionarios-ativos');
+    };
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>(() => {
     const stored = localStorage.getItem('historyEntries');
     if (stored) {
@@ -393,6 +464,8 @@ function App() {
   const [editingShiftCode, setEditingShiftCode] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState<string>(() => {
+    const hashPage = typeof window !== 'undefined' ? window.location.hash.replace('#', '') : ''
+    if (hashPage) return hashPage
     const storedPage = localStorage.getItem('currentPage');
     return storedPage || 'dashboard';
   });
@@ -422,6 +495,16 @@ function App() {
 
   const [editingPositionId, setEditingPositionId] = useState<string | null>(null)
   const [editingEmployeeId, setEditingEmployeeId] = useState<string | null>(null)
+
+  // Sempre que mudar para a tela de cadastro-funcionario, pega o perfilFuncionarioId do localStorage
+  React.useEffect(() => {
+    if (currentPage === 'cadastro-funcionario') {
+      const perfilId = localStorage.getItem('perfilFuncionarioId');
+      if (perfilId) {
+        setEditingEmployeeId(perfilId);
+      }
+    }
+  }, [currentPage]);
   const [editingFaltaId, setEditingFaltaId] = useState<string | null>(null)
   const [editingAtrasoId, setEditingAtrasoId] = useState<string | null>(null)
   const [editingQuebraId, setEditingQuebraId] = useState<string | null>(null)
@@ -567,9 +650,14 @@ function App() {
   useEffect(() => {
     localStorage.setItem('currentPage', currentPage)
     console.log('App currentPage:', currentPage)
+
+    const currentState = window.history.state
+    const shouldReplace = !currentState || currentState.page !== currentPage
+    if (shouldReplace) {
+      window.history.pushState({ page: currentPage }, '', `#${currentPage}`)
+    }
   }, [currentPage])
 
-  // Atualiza a tela ao mudar currentPage via localStorage
   useEffect(() => {
     const onStorage = () => {
       const newPage = localStorage.getItem('currentPage');
@@ -578,7 +666,19 @@ function App() {
       }
     };
     window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+
+    const onPopState = (event: PopStateEvent) => {
+      const page = event.state?.page as string | undefined
+      if (page && page !== currentPage) {
+        setCurrentPage(page)
+      }
+    }
+    window.addEventListener('popstate', onPopState)
+
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('popstate', onPopState)
+    }
   }, [currentPage]);
 
   useEffect(() => {
@@ -1466,7 +1566,7 @@ function App() {
         {currentPage.startsWith('perfil-funcionario-') && (() => {
           const id = currentPage.replace('perfil-funcionario-', '');
           const funcionario = employees.find(e => e.id === id) || null;
-          return <PerfilFuncionario funcionario={funcionario} onUpdateEmployee={handleUpdateEmployee} />;
+          return <PerfilFuncionario funcionario={funcionario} onUpdateEmployee={handleUpdateEmployee} onDismissEmployee={handleDismissEmployee} />;
         })()}
         <SwitchTransition mode="out-in">
           <CSSTransition
@@ -1504,7 +1604,7 @@ function App() {
           />
         )}
         {currentPage === 'aniversariantes' && <Birthdays employees={employees} />}
-        {currentPage === 'demitidos' && <DismissedEmployees />}
+        {currentPage === 'demitidos' && <DismissedEmployees employees={dismissedEmployees} />}
         {currentPage === 'departamentos' && <Departments onNavigate={handleNavigate} departments={departments} onDeleteDepartment={handleDeleteDepartment} onEditDepartment={handleEditDepartment} />}
         {currentPage === 'equipes' && (
           <Teams 

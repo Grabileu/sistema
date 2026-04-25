@@ -16,6 +16,7 @@ interface SelectProps {
   buttonRef?: React.Ref<HTMLButtonElement>
   onKeyDown?: React.KeyboardEventHandler<HTMLButtonElement>
   nextRef?: React.RefObject<HTMLElement | null>
+  showSearchBar?: boolean // NOVO: só mostra barra de busca se true
 }
 
 const Select: React.FC<SelectProps> = ({
@@ -27,14 +28,22 @@ const Select: React.FC<SelectProps> = ({
   menuClassName = '',
   buttonRef,
   onKeyDown,
-  nextRef
+  nextRef,
+  showSearchBar = false
 }) => {
+
   const [open, setOpen] = useState(false)
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
+  const [search, setSearch] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null)
 
   const selectedIndex = options.findIndex((option) => option.value === value)
+
+  // Só filtra se a barra de busca estiver ativa
+  const filteredOptions = (showSearchBar && search.trim().length > 0)
+    ? options.filter(opt => opt.label.toLowerCase().includes(search.trim().toLowerCase()))
+    : options
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -177,17 +186,33 @@ const Select: React.FC<SelectProps> = ({
 
       {open && (
         <div className={`absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-20 max-h-64 overflow-auto ${menuClassName}`}>
-          {options.map((option, index) => (
-            <button
-              key={`${option.value}`}
-              type="button"
-              onClick={() => selectAtIndex(index)}
-              onMouseEnter={() => setHighlightedIndex(index)}
-              className={`w-full text-left px-3 py-2 text-sm ${highlightedIndex === index ? 'bg-gray-100' : 'hover:bg-gray-100'} ${option.value === value ? 'text-gray-900' : 'text-gray-700'}`}
-            >
-              {option.label}
-            </button>
-          ))}
+          {showSearchBar && options.length > 15 && (
+            <div className="sticky top-0 bg-white z-10 p-2 border-b border-gray-100">
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Buscar..."
+                className="w-full px-2 py-1 border border-gray-200 rounded text-sm focus:outline-none"
+                autoFocus
+              />
+            </div>
+          )}
+          {filteredOptions.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-gray-400">Nenhuma opção encontrada</div>
+          ) : (
+            filteredOptions.map((option, index) => (
+              <button
+                key={`${option.value}`}
+                type="button"
+                onClick={() => selectAtIndex(options.indexOf(option))}
+                onMouseEnter={() => setHighlightedIndex(options.indexOf(option))}
+                className={`w-full text-left px-3 py-2 text-sm ${highlightedIndex === options.indexOf(option) ? 'bg-gray-100' : 'hover:bg-gray-100'} ${option.value === value ? 'text-gray-900' : 'text-gray-700'}`}
+              >
+                {option.label}
+              </button>
+            ))
+          )}
         </div>
       )}
     </div>
