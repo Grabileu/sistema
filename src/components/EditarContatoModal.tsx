@@ -1,61 +1,44 @@
-import React, { useState } from 'react';
-import { maskCelular, maskTelefone, maskWhatsapp } from '../utils/masks';
+import React, { useState } from 'react'
+import { maskCelular, maskTelefone, maskWhatsapp } from '../utils/masks'
+import GenericEditModal from './GenericEditModal'
 
 interface EditarContatoModalProps {
-  open: boolean;
+  open: boolean
   values: {
-    email: string;
-    emailAlternativo: string;
-    celular: string;
-    whatsapp: string;
-    telefone: string;
-    telefoneAlternativo: string;
-    linkedin: string;
-  };
-  onChange: (field: string, value: string) => void;
-  onClose: () => void;
-  onSubmit: () => void;
+    email: string
+    emailAlternativo: string
+    celular: string
+    whatsapp: string
+    telefone: string
+    telefoneAlternativo: string
+    linkedin: string
+  }
+  onChange: (field: string, value: string) => void
+  onClose: () => void
+  onSubmit: () => void
 }
 
-import { useEffect } from 'react';
-
 const EditarContatoModal: React.FC<EditarContatoModalProps> = ({ open, values, onChange, onClose, onSubmit }) => {
-  const [touched, setTouched] = useState(false);
+  const [touched, setTouched] = useState(false)
 
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [open]);
-
-  if (!open) return null;
+  const handleSubmit = () => {
+    setTouched(true)
+    if (!values.email) return
+    onSubmit()
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-8 relative animate-fade-in">
-        <button
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold"
-          onClick={onClose}
-          aria-label="Fechar"
-        >
-          ×
-        </button>
-        <h2 className="text-2xl font-semibold text-gray-900 mb-6">Editar dados do funcionário</h2>
-        <hr className="my-4" />
-        <h3 className="text-lg font-bold text-indigo-700 mb-4">Contato</h3>
-        <form
-          onSubmit={e => {
-            e.preventDefault();
-            setTouched(true);
-            if (!values.email) return;
-            onSubmit();
-          }}
-        >
+    <GenericEditModal
+      isOpen={open}
+      title="Editar dados do funcionário"
+      onClose={onClose}
+      onSubmit={handleSubmit}
+      submitButtonText="Salvar alterações"
+    >
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-lg font-bold text-indigo-700 mb-4">Contato</h3>
+          
           <div className="mb-4">
             <label className="block text-gray-700 text-sm mb-1 font-medium">
               E-mail <span className="text-red-500">*</span>
@@ -70,6 +53,7 @@ const EditarContatoModal: React.FC<EditarContatoModalProps> = ({ open, values, o
               <span className="text-xs text-red-500 mt-1 block">Campo obrigatório</span>
             )}
           </div>
+
           <div className="mb-4">
             <label className="block text-gray-700 text-sm mb-1 font-medium">E-mail alternativo</label>
             <input
@@ -79,6 +63,7 @@ const EditarContatoModal: React.FC<EditarContatoModalProps> = ({ open, values, o
               placeholder="Digite"
             />
           </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-gray-700 text-sm mb-1 font-medium">Celular</label>
@@ -103,7 +88,8 @@ const EditarContatoModal: React.FC<EditarContatoModalProps> = ({ open, values, o
               />
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-gray-700 text-sm mb-1 font-medium">Telefone</label>
               <input
@@ -127,7 +113,8 @@ const EditarContatoModal: React.FC<EditarContatoModalProps> = ({ open, values, o
               />
             </div>
           </div>
-          <div className="mb-6">
+
+          <div className="mt-4">
             <label className="block text-gray-700 text-sm mb-1 font-medium">Linkedin</label>
             <input
               className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm"
@@ -136,14 +123,10 @@ const EditarContatoModal: React.FC<EditarContatoModalProps> = ({ open, values, o
               placeholder="Digite"
             />
           </div>
-          <div className="flex flex-col gap-2 mt-8">
-            <button type="submit" className="w-full py-2 rounded bg-indigo-700 text-white font-semibold hover:bg-indigo-800 transition text-xs">Salvar alterações</button>
-            <button type="button" className="w-full py-2 rounded bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition text-xs" onClick={onClose}>Cancelar</button>
-          </div>
-        </form>
+        </div>
       </div>
-    </div>
-  );
-};
+    </GenericEditModal>
+  )
+}
 
-export default EditarContatoModal;
+export default EditarContatoModal

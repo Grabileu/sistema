@@ -156,10 +156,57 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
         criarDiasApartirDe: editingEmployee.criarDiasApartirDe || '03/02/2026',
         loja: editingEmployee.loja || ''
       });
+      setCurrentStep(1);
+      setErrors((prev) => ({
+        ...prev,
+        nomeCompleto: false,
+        email: false,
+        cpf: false,
+        genero: false,
+        dataNascimento: false,
+        isCLT: false,
+        dataAdmissao: false,
+        equipe: false,
+        cargo: false,
+        turno: false,
+        criarDiasApartirDe: false,
+        loja: false
+      }));
     } else {
-      // new record: auto-generate sequential matricula
+      // new record: auto-generate sequential matricula and clear form
       const next = employees.length + 1;
-      setFormData((prev) => ({ ...prev, matricula: String(next).padStart(2, '0') }));
+      setFormData({
+        matricula: String(next).padStart(2, '0'),
+        nomeCompleto: '',
+        email: '',
+        cpf: '',
+        genero: '',
+        dataNascimento: '',
+        isCLT: '',
+        pis: '',
+        dataAdmissao: '03/02/2026',
+        equipe: '',
+        cargo: '',
+        turno: '',
+        criarDiasApartirDe: '03/02/2026',
+        loja: ''
+      });
+      setCurrentStep(1);
+      setErrors((prev) => ({
+        ...prev,
+        nomeCompleto: false,
+        email: false,
+        cpf: false,
+        genero: false,
+        dataNascimento: false,
+        isCLT: false,
+        dataAdmissao: false,
+        equipe: false,
+        cargo: false,
+        turno: false,
+        criarDiasApartirDe: false,
+        loja: false
+      }));
     }
   }, [editingEmployee, employees]);
 

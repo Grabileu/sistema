@@ -1,6 +1,7 @@
 import React from 'react';
 import { maskCelular, maskTelefone } from '../utils/masks';
 import Select from './Select';
+import GenericEditModal from './GenericEditModal';
 
 interface ContatoEmergencia {
   nome: string;
@@ -31,40 +32,22 @@ const RELACAO_OPTIONS = [
   { label: 'Outro', value: 'Outro' },
 ];
 
-import { useEffect } from 'react';
-
 const EditarContatoEmergenciaModal: React.FC<EditarContatoEmergenciaModalProps> = ({ open, values, onChange, onClose, onSubmit, RemoverBotao, onRemover }) => {
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [open]);
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-8 relative animate-fade-in">
-        <button
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold"
-          onClick={onClose}
-          aria-label="Fechar"
-        >
-          ×
-        </button>
-        <h2 className="text-2xl font-semibold text-gray-900 mb-6">Editar dados do funcionário</h2>
-        <hr className="my-4" />
-        <div className="text-indigo-700 font-bold text-base mb-2 cursor-pointer">Contatos de emergência</div>
-        <form
-          onSubmit={e => {
-            e.preventDefault();
-            onSubmit();
-          }}
-        >
+    <GenericEditModal
+      isOpen={open}
+      title="Editar dados do funcionário"
+      onClose={onClose}
+      onSubmit={onSubmit}
+      submitButtonText="Salvar alterações"
+    >
+      <div className="text-indigo-700 font-bold text-base mb-2 cursor-pointer">Contatos de emergência</div>
+      <form
+        onSubmit={e => {
+          e.preventDefault();
+          onSubmit();
+        }}
+      >
           <div className="mb-4 border-b pb-4">
             <div className="flex items-center justify-between mb-2">
               <div className="font-bold text-gray-800">Contato 1</div>
@@ -131,13 +114,8 @@ const EditarContatoEmergenciaModal: React.FC<EditarContatoEmergenciaModalProps> 
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 mt-8">
-            <button type="submit" className="w-full py-2 rounded bg-indigo-700 text-white font-semibold hover:bg-indigo-800 transition text-xs">Salvar alterações</button>
-            <button type="button" className="w-full py-2 rounded bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition text-xs" onClick={onClose}>Cancelar</button>
-          </div>
         </form>
-      </div>
-    </div>
+    </GenericEditModal>
   );
 };
 

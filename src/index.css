@@ -1,4 +1,6 @@
 /* Animação do submenu lateral */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 .submenu-slide-enter {
   opacity: 0;
   transform: translateX(40px);
@@ -17,7 +19,6 @@
   transform: translateX(40px);
   transition: opacity 300ms, transform 300ms;
 }
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -26,16 +27,57 @@
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
   textarea,
   select {
-    @apply focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-100;
+    @apply rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 shadow-sm placeholder:text-slate-400;
+    @apply focus:outline-none focus:border-blue-300 focus:bg-white focus:ring-2 focus:ring-blue-100;
+  }
+
+  /* Padroniza campos de observacao (textarea) em todo o sistema */
+  textarea {
+    border-radius: 0.75rem !important;
+    border: 1px solid rgb(226 232 240) !important;
+    background-color: rgb(248 250 252) !important;
+    padding: 0.625rem 0.75rem !important;
+    font-size: 0.875rem !important;
+    line-height: 1.25rem !important;
+    color: rgb(51 65 85) !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06) !important;
+    transition: box-shadow 200ms ease, border-color 200ms ease, background-color 200ms ease !important;
+  }
+
+  textarea:focus {
+    outline: none !important;
+    border-color: rgb(147 197 253) !important;
+    background-color: #fff !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.14) !important;
   }
 }
 
+@layer components {
+  .app-card {
+    @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
+  }
+
+  .app-button-primary {
+    @apply inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700;
+  }
+
+  .app-button-secondary {
+    @apply inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50;
+  }
+}
+
+.page-transition-wrapper {
+  min-height: calc(100vh - 4rem);
+  overflow-x: hidden;
+  will-change: opacity;
+}
+
 * {
-  @apply transition-all duration-200;
+  @apply transition-colors duration-200;
 }
 
 body {
-  @apply bg-gray-50;
+  @apply bg-slate-50 text-slate-700;
   font-family: 'Inter', sans-serif;
 }
 
@@ -305,5 +347,21 @@ body {
   100% {
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
+  }
+}
+
+/* Corrige borda preta ao focar inputs (mouse/cliques) e mantém indicador acessível para teclado */
+@layer components {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+  textarea,
+  select,
+  button {
+    outline: none !important;
+  }
+
+  /* Mostrar anel visível apenas quando foco por teclado for detectado */
+  :focus-visible {
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.06) !important;
+    border-color: rgba(59,130,246,0.25) !important;
   }
 }

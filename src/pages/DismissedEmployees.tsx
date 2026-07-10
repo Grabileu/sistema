@@ -125,7 +125,13 @@ const DismissedEmployees: React.FC<DismissedEmployeesProps> = ({ employees }) =>
                 </tr>
               </thead>
               <tbody className="text-gray-700">
-                {dismissed.map((d) => (
+                {dismissed.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="py-12 text-center text-sm text-gray-500">
+                      Nenhum funcionário demitido encontrado.
+                    </td>
+                  </tr>
+                ) : dismissed.map((d) => (
                   <tr key={d.id} className="border-b">
                     <td className="py-4">{d.dataDemissao || '-'}</td>
                     <td className="py-4">

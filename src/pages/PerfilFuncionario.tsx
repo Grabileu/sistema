@@ -3,16 +3,14 @@ import DependentesList from '../components/DependentesList';
 import EditarContatoModal from '../components/EditarContatoModal';
 import EditarContatoEmergenciaModal from '../components/EditarContatoEmergenciaModal';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import { useEditModal } from '../hooks/useEditModal';
 import EditarPeriodoExperienciaModal from '../components/EditarPeriodoExperienciaModal';
 import EditarSindicatoModal from '../components/EditarSindicatoModal';
 import EditarEnderecoModal from '../components/EditarEnderecoModal';
 import { PERIODO_EXPERIENCIA_OPTIONS } from '../constants/periodoExperienciaOptions';
-import { getEquipesFromStorage, getDepartamentoDaEquipe } from '../utils/formatters';
-import DatePicker from '../components/DatePicker';
-import Select from '../components/Select';
+import { getDepartamentoDaEquipe, formatCurrency } from '../utils/formatters';
 import EditarFormacaoModal from '../components/EditarFormacaoModal';
 import EditarNecessidadeModal from '../components/EditarNecessidadeModal';
 import EditarProfissionalModal from '../components/EditarProfissionalModal';
@@ -22,23 +20,10 @@ import {
   FORMA_PAGAMENTO_OPTIONS,
   MODALIDADE_OPTIONS,
   TIPO_CONTA_OPTIONS,
-  BANCO_OPTIONS,
   TIPO_CHAVE_OPTIONS,
-  ESTADO_CIVIL_OPTIONS,
-  CATEGORIA_CNH_OPTIONS,
-  ESCOLARIDADE_OPTIONS,
-  NECESSIDADE_ESPECIAL_OPTIONS,
-  TIPO_NECESSIDADE_OPTIONS,
-  VINCULO_OPTIONS,
-  PRIMEIRO_EMPREGO_OPTIONS,
-  CARGO_CONFIANCA_OPTIONS,
-  SEGURO_DESEMPREGO_OPTIONS,
-  APOSENTADO_OPTIONS,
-  FREQUENCIA_PAGAMENTO_OPTIONS,
-  ESTABILIDADE_OPTIONS
+  VINCULO_OPTIONS
 } from '../constants/selectOptions';
 import { Employee } from '../App';
-import { formatCurrency, formatCPF } from '../utils/formatters';
 import { maskPISPasep, maskCarteiraTrabalho, maskCelular, maskTelefone, maskWhatsapp } from '../utils/masks';
 
 interface PerfilFuncionarioProps {
@@ -47,6 +32,58 @@ interface PerfilFuncionarioProps {
   onDismissEmployee?: (employeeId: string) => void;
 }
 
+type PerfilTab = 'principal' | 'profissional' | 'endereco' | 'dependentes' | 'ferias';
+
+interface Dependente {
+  nome: string;
+  relacao: string;
+  dataNascimento: string;
+  nomeMae: string;
+  cpf: string;
+  telefone: string;
+  email: string;
+  observacoes: string;
+}
+
+interface ContatoEmergencia {
+  nome: string;
+  relacao: string;
+  celular: string;
+  telefone: string;
+  email: string;
+}
+
+const createEmptyDependente = (): Dependente => ({
+  nome: '',
+  relacao: '',
+  dataNascimento: '',
+  nomeMae: '',
+  cpf: '',
+  telefone: '',
+  email: '',
+  observacoes: '',
+});
+
+const createEmptyContatoEmergencia = (): ContatoEmergencia => ({
+  nome: '',
+  relacao: '',
+  celular: '',
+  telefone: '',
+  email: '',
+});
+
+function useLocalStorageState<T>(key: string, initialValue: T) {
+  const [state, setState] = useState<T>(() => {
+    const saved = localStorage.getItem(key);
+    return saved ? (JSON.parse(saved) as T) : initialValue;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(key, JSON.stringify(state));
+  }, [key, state]);
+
+  return [state, setState] as const;
+}
 
 export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDismissEmployee }: PerfilFuncionarioProps) {
     // Estado do modal de confirmação de demissão
@@ -64,10 +101,7 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
     observacoes: '',
   });
   // Estado da lista de dependentes
-  const [dependentes, setDependentes] = useState<any[]>(() => {
-    const saved = localStorage.getItem('dependentes');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [dependentes, setDependentes] = useLocalStorageState<Dependente[]>('dependentes', []);
   const [editIndexDependente, setEditIndexDependente] = useState<number | null>(null);
   const [showListaDependentes, setShowListaDependentes] = useState(false);
 
@@ -79,18 +113,22 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
   };
   // Remover dependente
   const handleRemoveDependente = (idx: number) => {
-    setDependentes(prev => {
-      const updated = prev.filter((_, i) => i !== idx);
-      localStorage.setItem('dependentes', JSON.stringify(updated));
-      return updated;
-    });
+    setDependentes(prev => prev.filter((_, i) => i !== idx));
   };
   // Persistir dependentes no localStorage sempre que mudar
-  React.useEffect(() => {
-    localStorage.setItem('dependentes', JSON.stringify(dependentes));
-  }, [dependentes]);
     // Estado local para refletir alterações na tela
     const [funcionarioView, setFuncionarioView] = useState<Employee | null>(funcionario ? { ...funcionario } : null);
+
+    useEffect(() => {
+      setFuncionarioView(funcionario ? { ...funcionario } : null);
+    }, [funcionario]);
+
+    const updateFuncionarioView = (updates: Partial<Employee>) => {
+      if (!funcionarioView) return;
+      const updated = { ...funcionarioView, ...updates };
+      setFuncionarioView(updated);
+      onUpdateEmployee?.(updated);
+    };
 
     // ====== ESTADO E HANDLERS DO MODAL DE CONTATO ======
     const [showEditContato, setShowEditContato] = useState(false);
@@ -124,10 +162,7 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
     };
 
     const handleEditContatoSubmit = () => {
-      if (!funcionarioView) return;
-      const updated = { ...funcionarioView, ...editContato };
-      setFuncionarioView(updated);
-      if (onUpdateEmployee) onUpdateEmployee(updated);
+      updateFuncionarioView(editContato);
       setShowEditContato(false);
     };
 
@@ -143,9 +178,7 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
       pais: funcionarioView?.pais || '',
     }, (values) => {
       if (!funcionarioView) return;
-      const updated = { ...funcionarioView, ...values };
-      setFuncionarioView(updated);
-      if (onUpdateEmployee) onUpdateEmployee(updated);
+      updateFuncionarioView(values);
     });
     const handleOpenEditEndereco = () => {
       if (funcionarioView) {
@@ -168,18 +201,14 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
     nome: '',
     anexo: null as File | null,
   }, (values) => {
-    if (!funcionarioView) return;
-    const updated = {
-      ...funcionarioView,
+    updateFuncionarioView({
       sindicato: {
         nome: values.nome,
         contribui: values.contribui,
         valor: values.valor,
         anexo: values.anexo,
       }
-    };
-    setFuncionarioView(updated);
-    if (onUpdateEmployee) onUpdateEmployee(updated);
+    });
   });
   const handleOpenEditSindicato = () => {
     editSindicatoModal.handleOpen();
@@ -190,15 +219,11 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
     dataInicio: '',
     dataTermino: '',
   }, (values) => {
-    if (!funcionarioView) return;
-    const updated = {
-      ...funcionarioView,
+    updateFuncionarioView({
       periodoExperiencia: values.periodo,
       dataInicioExperiencia: values.dataInicio,
       dataTerminoExperiencia: values.dataTermino,
-    };
-    setFuncionarioView(updated);
-    if (onUpdateEmployee) onUpdateEmployee(updated);
+    });
   });
   const handleOpenEditExperiencia = () => {
     if (funcionarioView) {
@@ -212,7 +237,7 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
     }
   };
 
-  const [abaAtiva, setAbaAtiva] = useState<'principal' | 'profissional' | 'endereco' | 'dependentes'>('principal');
+  const [abaAtiva, setAbaAtiva] = useState<PerfilTab>('principal');
   // ...existing code...
 
   // Estado centralizado para modal de dados pessoais
@@ -234,10 +259,7 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
     obsGerais: funcionarioView?.obsGerais || '',
     dataNascimento: funcionarioView?.dataNascimento || '',
   }, (values) => {
-    if (!funcionarioView) return;
-    const updated = { ...funcionarioView, ...values };
-    setFuncionarioView(updated);
-    if (onUpdateEmployee) onUpdateEmployee(updated);
+    updateFuncionarioView(values);
   });
 
   // Estado centralizado para modal de formação
@@ -246,10 +268,7 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
     conclusao: funcionarioView?.conclusao || '',
     areasFormacao: funcionarioView?.areasFormacao || '',
   }, (values) => {
-    if (!funcionarioView) return;
-    const updated = { ...funcionarioView, ...values };
-    setFuncionarioView(updated);
-    if (onUpdateEmployee) onUpdateEmployee(updated);
+    updateFuncionarioView(values);
   });
 
   // Estado centralizado para modal de necessidade especial
@@ -258,10 +277,7 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
     tipoNecessidade: funcionarioView?.tipoNecessidade || '',
     obsNecessidade: funcionarioView?.obsNecessidade || '',
   }, (values) => {
-    if (!funcionarioView) return;
-    const updated = { ...funcionarioView, ...values };
-    setFuncionarioView(updated);
-    if (onUpdateEmployee) onUpdateEmployee(updated);
+    updateFuncionarioView(values);
   });
 
   // Estado centralizado para modal profissional
@@ -287,10 +303,7 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
     loja: funcionarioView?.loja || '',
     dataExameAdmissional: funcionarioView?.dataExameAdmissional || '',
   }, (values) => {
-    if (!funcionarioView) return;
-    const updated = { ...funcionarioView, ...values };
-    setFuncionarioView(updated);
-    if (onUpdateEmployee) onUpdateEmployee(updated);
+    updateFuncionarioView(values);
   });
 
   // Estado centralizado para modal de dados bancários
@@ -306,10 +319,7 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
     chavePix: '',
     tipoChave: '',
   }, (values) => {
-    if (!funcionarioView) return;
-    const updated = { ...funcionarioView, ...values };
-    setFuncionarioView(updated);
-    if (onUpdateEmployee) onUpdateEmployee(updated);
+    updateFuncionarioView(values);
   });
   const handleOpenEditBancarios = () => {
     if (funcionarioView) {
@@ -347,12 +357,11 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
 
 
 
-  const [editDataExameAdmissional, setEditDataExameAdmissional] = useState<string>(funcionarioView?.dataExameAdmissional || '');
 
 
 
   // Impede rolagem do body apenas quando o modal de contato está aberto
-  React.useEffect(() => {
+  useEffect(() => {
     if (showEditContato) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -366,10 +375,7 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
   // ====== ESTADO E HANDLERS DO MODAL DE CONTATO DE EMERGÊNCIA ======
   const [showEditContatoEmergencia, setShowEditContatoEmergencia] = useState(false);
   // Lista de contatos de emergência
-  const [contatosEmergencia, setContatosEmergencia] = useState<any[]>(() => {
-    const saved = localStorage.getItem('contatosEmergencia');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [contatosEmergencia, setContatosEmergencia] = useLocalStorageState<ContatoEmergencia[]>('contatosEmergencia', []);
   // Estado para edição/adicionar contato
   const [editContatoEmergencia, setEditContatoEmergencia] = useState({
     nome: '',
@@ -400,11 +406,7 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
   };
   // Remover contato individual da lista
   const handleRemoverContatoIndividual = (idx: number) => {
-    setContatosEmergencia(prev => {
-      const updated = prev.filter((_, i) => i !== idx);
-      localStorage.setItem('contatosEmergencia', JSON.stringify(updated));
-      return updated;
-    });
+    setContatosEmergencia(prev => prev.filter((_, i) => i !== idx));
   };
   // Atualizar campos do modal
   const handleEditContatoEmergenciaChange = (field: string, value: string) => {
@@ -413,24 +415,13 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
   // Salvar contato (novo ou edição)
   const handleEditContatoEmergenciaSubmit = () => {
     if (editIndexContatoEmergencia === null) {
-      setContatosEmergencia(prev => {
-        const updated = [...prev, editContatoEmergencia];
-        localStorage.setItem('contatosEmergencia', JSON.stringify(updated));
-        return updated;
-      });
+      setContatosEmergencia(prev => [...prev, editContatoEmergencia]);
     } else {
-      setContatosEmergencia(prev => {
-        const updated = prev.map((c, i) => i === editIndexContatoEmergencia ? editContatoEmergencia : c);
-        localStorage.setItem('contatosEmergencia', JSON.stringify(updated));
-        return updated;
-      });
+      setContatosEmergencia(prev => prev.map((c, i) => i === editIndexContatoEmergencia ? editContatoEmergencia : c));
     }
     setShowEditContatoEmergencia(false);
   };
   // Persistir contatos de emergência no localStorage sempre que mudar
-  React.useEffect(() => {
-    localStorage.setItem('contatosEmergencia', JSON.stringify(contatosEmergencia));
-  }, [contatosEmergencia]);
 
   // Remover contato de emergência
   const handleRemoverContatoEmergencia = () => {
@@ -439,6 +430,30 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
       setShowEditContatoEmergencia(false);
     }
   };
+
+  const detailTabs: Array<{ key: PerfilTab; label: string }> = [
+    { key: 'principal', label: 'Principal' },
+    { key: 'profissional', label: 'Profissional e Financeiro' },
+    { key: 'endereco', label: 'Endereço e contatos' },
+    { key: 'dependentes', label: 'Dependentes' },
+  ];
+
+  const getDetailTabButtonClass = (tab: PerfilTab) =>
+    `text-sm ${abaAtiva === tab ? 'font-bold text-indigo-700 border-b-2 border-indigo-700 px-2 pb-1' : 'text-gray-600'}`;
+
+  const renderDetailTabButtons = () => (
+    <div className="flex justify-between gap-2 border-b border-gray-200 mb-4">
+      {detailTabs.map(({ key, label }) => (
+        <button
+          key={key}
+          className={getDetailTabButtonClass(key)}
+          onClick={() => setAbaAtiva(key)}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <>
@@ -587,32 +602,7 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
 
           {/* Abas detalhadas */}
           <div className="bg-white rounded-xl shadow-lg p-5 border border-gray-100 mt-2 w-full">
-            <div className="flex justify-between gap-2 border-b border-gray-200 mb-4">
-              <button
-                className={`text-sm ${abaAtiva === 'principal' ? 'font-bold text-indigo-700 border-b-2 border-indigo-700 px-2 pb-1' : 'text-gray-600'}`}
-                onClick={() => setAbaAtiva('principal')}
-              >
-                Principal
-              </button>
-              <button
-                className={`text-sm ${abaAtiva === 'profissional' ? 'font-bold text-indigo-700 border-b-2 border-indigo-700 px-2 pb-1' : 'text-gray-600'}`}
-                onClick={() => setAbaAtiva('profissional')}
-              >
-                Profissional e Financeiro
-              </button>
-              <button
-                className={`text-sm ${abaAtiva === 'endereco' ? 'font-bold text-indigo-700 border-b-2 border-indigo-700 px-2 pb-1' : 'text-gray-600'}`}
-                onClick={() => setAbaAtiva('endereco')}
-              >
-                Endereço e contatos
-              </button>
-              <button
-                className={`text-sm ${abaAtiva === 'dependentes' ? 'font-bold text-indigo-700 border-b-2 border-indigo-700 px-2 pb-1' : 'text-gray-600'}`}
-                onClick={() => setAbaAtiva('dependentes')}
-              >
-                Dependentes
-              </button>
-            </div>
+            {renderDetailTabButtons()}
         {abaAtiva === 'endereco' && (
           <div>
             <div className="flex items-center justify-between mb-4">

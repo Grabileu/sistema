@@ -39,7 +39,7 @@ const Departments: React.FC<DepartmentsProps> = ({
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="min-h-screen bg-slate-50">
       {pendingDelete && (
         <DeleteConfirmModal
           title="Excluir departamento"
@@ -50,99 +50,93 @@ const Departments: React.FC<DepartmentsProps> = ({
         />
       )}
 
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-gray-900">Lista de departamentos</h1>
+      <div className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
+          <div>
+            <h1 className="text-xl font-semibold text-slate-900">Lista de departamentos</h1>
+            <p className="mt-1 text-sm text-slate-500">Gerencie os departamentos cadastrados no sistema.</p>
+          </div>
           <button
             onClick={() => onNavigate?.('cadastro-departamento')}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-indigo-700"
+            className="app-button-primary"
           >
             Cadastrar departamento
           </button>
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-6">
-        <div className="bg-white shadow rounded-lg overflow-visible">
-          <div className="p-4 bg-gray-50 border-b text-right text-sm text-gray-600">
-            Página 1/1 - Exibindo {departments.length} de {departments.length} registros
+      <div className="mx-auto max-w-7xl px-6 py-6 lg:px-8">
+        <div className="app-card overflow-visible">
+          <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-right text-sm text-slate-600">
+            Exibindo {departments.length} registro(s)
           </div>
-          
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Código
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Nome
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Criado em
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {departments.length === 0 ? (
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="border-b border-slate-200 bg-slate-50">
                 <tr>
-                  <td colSpan={4} className="px-6 py-10 text-center text-gray-500">
-                    Nenhum departamento cadastrado
-                  </td>
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Código</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Nome</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Criado em</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Ações</th>
                 </tr>
-              ) : (
-                departments.map((dept) => (
-                  <tr key={dept.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {dept.codigo}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-indigo-600 cursor-pointer hover:text-indigo-800">
-                        {dept.nome}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {dept.criadoEm}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="relative" ref={openMenuId === dept.id ? menuRef : null}>
-                        <button
-                          onClick={() => setOpenMenuId(openMenuId === dept.id ? null : dept.id)}
-                          className="hover:bg-gray-100 p-1 rounded"
-                        >
-                          <MoreVertical size={18} />
-                        </button>
-                        
-                        {openMenuId === dept.id && (
-                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                            <button
-                              onClick={() => {
-                                onEditDepartment?.(dept.id)
-                                setOpenMenuId(null)
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
-                            >
-                              <Edit2 size={16} />
-                              Editar
-                            </button>
-                            <button
-                              onClick={() => handleDelete(dept.id, dept.nome)}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 rounded-b-lg"
-                            >
-                              <Trash2 size={16} />
-                              Excluir
-                            </button>
-                          </div>
-                        )}
+              </thead>
+              <tbody className="divide-y divide-slate-200 bg-white text-slate-700">
+                {departments.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-12">
+                      <div className="mx-auto flex max-w-sm flex-col items-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-8 text-center">
+                        <div className="text-sm font-semibold text-slate-700">Nenhum departamento cadastrado</div>
+                        <div className="mt-1 text-sm text-slate-500">Cadastre o primeiro departamento para começar.</div>
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  departments.map((dept) => (
+                    <tr key={dept.id} className="transition hover:bg-slate-50">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-900">{dept.codigo}</td>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        <span className="cursor-pointer text-sm font-medium text-blue-700 hover:text-blue-800">{dept.nome}</span>
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-900">{dept.criadoEm}</td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
+                        <div className="relative" ref={openMenuId === dept.id ? menuRef : null}>
+                          <button
+                            onClick={() => setOpenMenuId(openMenuId === dept.id ? null : dept.id)}
+                            className="rounded-lg p-1.5 transition hover:bg-slate-100"
+                          >
+                            <MoreVertical size={18} />
+                          </button>
+
+                          {openMenuId === dept.id && (
+                            <div className="absolute right-0 z-50 mt-2 w-48 rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                              <button
+                                onClick={() => {
+                                  onEditDepartment?.(dept.id)
+                                  setOpenMenuId(null)
+                                }}
+                                className="flex w-full items-center gap-3 rounded-t-xl px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-50"
+                              >
+                                <Edit2 size={16} />
+                                Editar
+                              </button>
+                              <button
+                                onClick={() => handleDelete(dept.id, dept.nome)}
+                                className="flex w-full items-center gap-3 rounded-b-xl px-4 py-3 text-sm text-red-600 transition hover:bg-red-50"
+                              >
+                                <Trash2 size={16} />
+                                Excluir
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

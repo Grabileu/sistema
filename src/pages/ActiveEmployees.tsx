@@ -150,14 +150,13 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
       }
 
       window.addEventListener('storage', handleStorageChange)
-      const handleHeaderSearchChange = (e: any) => {
-        console.log('Header search change event:', e.detail)
+      const handleHeaderSearchSubmit = (e: any) => {
         setHeaderSearchTerm(e.detail || '')
       }
-      window.addEventListener('headerSearchChange', handleHeaderSearchChange)
+      window.addEventListener('headerSearchSubmit', handleHeaderSearchSubmit)
       return () => {
         window.removeEventListener('storage', handleStorageChange)
-        window.removeEventListener('headerSearchChange', handleHeaderSearchChange)
+        window.removeEventListener('headerSearchSubmit', handleHeaderSearchSubmit)
       }
     }, [])
 
@@ -179,7 +178,11 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
       if (headerTerm) {
         const cpfTerm = headerTerm.replace(/\D/g, '')
         const nameMatch = emp.nomeCompleto.toLowerCase().includes(headerTerm)
-        const cpfMatch = emp.cpf ? emp.cpf.replace(/\D/g, '').includes(cpfTerm) : false
+        const cpfMatch =
+          cpfTerm.length > 0 &&
+          emp.cpf
+            ? emp.cpf.replace(/\D/g, '').includes(cpfTerm)
+            : false
         if (!nameMatch && !cpfMatch) return false
       }
       if (appliedFilters.nome && !emp.nomeCompleto.toLowerCase().includes(appliedFilters.nome.toLowerCase())) return false;

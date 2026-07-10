@@ -2,7 +2,8 @@ import React from 'react';
 import Select from './Select';
 import DatePicker from './DatePicker';
 import { formatCPF } from '../utils/formatters';
-import { maskCelular, maskTelefone } from '../utils/masks';
+import { maskCelular } from '../utils/masks';
+import GenericEditModal from './GenericEditModal';
 
 interface Dependente {
   nome: string;
@@ -37,8 +38,6 @@ const RELACOES = [
   { label: 'Outro', value: 'Outro' },
 ];
 
-import { useEffect } from 'react';
-
 export default function EditarDependenteModal({
   open,
   values,
@@ -49,27 +48,15 @@ export default function EditarDependenteModal({
   RemoverBotao,
   index
 }: EditarDependenteModalProps) {
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [open]);
-  if (!open) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-8 relative animate-fade-in">
-        <button
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold"
-          onClick={onClose}
-          aria-label="Fechar"
-        >×</button>
-        <h2 className="text-2xl font-semibold text-gray-900 mb-6">Editar dados do funcionário</h2>
-        <hr className="my-4" />
+    <GenericEditModal
+      isOpen={open}
+      title="Editar dados do funcionário"
+      onClose={onClose}
+      onSubmit={onSubmit}
+      submitButtonText="Salvar alterações"
+    >
         <div className="text-indigo-700 font-bold text-lg mb-2">Dependentes</div>
         <div className="font-bold text-gray-700 mb-4">Dependente {index !== undefined ? index + 1 : ''}</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -153,11 +140,6 @@ export default function EditarDependenteModal({
             />
           </div>
         </div>
-        <div className="flex flex-col mt-8 gap-2">
-          <button className="w-full py-2 rounded bg-indigo-700 text-white font-semibold hover:bg-indigo-800 transition text-xs" onClick={onSubmit}>Salvar alterações</button>
-          <button className="w-full py-2 rounded bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition text-xs" onClick={onClose}>Cancelar</button>
-        </div>
-      </div>
-    </div>
+    </GenericEditModal>
   );
 }

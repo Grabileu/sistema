@@ -416,6 +416,10 @@ function App() {
     setLoggedUser(null)
   }
 
+  const handleUpdateLoggedUser = (user: LoggedUser) => {
+    setLoggedUser(user)
+  }
+
   const [profilePermissions, setProfilePermissions] = useState<ProfilePermissions>(() => loadProfilePermissions())
   const [showRoutePulse, setShowRoutePulse] = useState(false)
   const [connectionState, setConnectionState] = useState<'normal' | 'unstable' | 'offline'>(() => {
@@ -499,9 +503,12 @@ function App() {
   // Sempre que mudar para a tela de cadastro-funcionario, pega o perfilFuncionarioId do localStorage
   React.useEffect(() => {
     if (currentPage === 'cadastro-funcionario') {
-      const perfilId = localStorage.getItem('perfilFuncionarioId');
+      const editingId = localStorage.getItem('editingEmployeeId');
+      const perfilId = editingId || localStorage.getItem('perfilFuncionarioId');
       if (perfilId) {
         setEditingEmployeeId(perfilId);
+      } else {
+        setEditingEmployeeId(null);
       }
     }
   }, [currentPage]);
@@ -649,7 +656,6 @@ function App() {
 
   useEffect(() => {
     localStorage.setItem('currentPage', currentPage)
-    console.log('App currentPage:', currentPage)
 
     const currentState = window.history.state
     const shouldReplace = !currentState || currentState.page !== currentPage
@@ -702,10 +708,13 @@ function App() {
       return
     }
 
-    setShowRoutePulse(true)
-    const timer = window.setTimeout(() => setShowRoutePulse(false), 700)
+    const frame = window.requestAnimationFrame(() => setShowRoutePulse(true))
+    const timer = window.setTimeout(() => setShowRoutePulse(false), 450)
 
-    return () => window.clearTimeout(timer)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.clearTimeout(timer)
+    }
   }, [currentPage, loggedUser])
 
   useEffect(() => {
@@ -738,7 +747,6 @@ function App() {
           setCurrentPage('resumo-turno');
           return;
         }
-    console.log('App handleNavigate:', route)
     if (route.startsWith('editar-turno-')) {
       const codigo = route.replace('editar-turno-', '');
       setEditingShiftCode(codigo);
@@ -827,6 +835,8 @@ function App() {
       return
     }
     if (route === 'cadastro-funcionario') {
+      localStorage.removeItem('perfilFuncionarioId')
+      localStorage.removeItem('editingEmployeeId')
       setEditingEmployeeId(null) // ensure form is blank when adding new
       setCurrentPage('cadastro-funcionario')
       return
@@ -1518,63 +1528,80 @@ function App() {
       />
       
       <div>
-        <Header onMenuClick={() => setMenuOpen(!menuOpen)} loggedUser={loggedUser} onLogout={handleLogout} />
+        <Header 
+          onMenuClick={() => setMenuOpen(!menuOpen)} 
+          loggedUser={loggedUser} 
+          onLogout={handleLogout}
+          onUpdateLoggedUser={handleUpdateLoggedUser}
+          onLogoClick={() => handleNavigate('dashboard')}
+        />
 
-        {/* Navigation Tabs fixo no topo do dashboard */}
+        {/* Dashboard com Navigation fixa e conteúdo com transição */}
         {currentPage === 'dashboard' && (
-          <div className="w-full bg-white border-b shadow-sm z-20 sticky top-0 left-0">
-            <div className="container mx-auto px-4">
-              <div className="flex justify-center gap-8 border-b">
-                <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+          <>
+            <div className="w-full bg-white border-b shadow-sm z-20 sticky top-0 left-0">
+              <div className="container mx-auto px-4">
+                <div className="flex justify-center gap-8 border-b">
+                  <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+                </div>
               </div>
             </div>
-          </div>
+
+            <SwitchTransition mode="out-in">
+              <CSSTransition
+                key={activeTab}
+                timeout={180}
+                classNames="dashboard-tab"
+                unmountOnExit
+              >
+                <div className="page-transition-wrapper container mx-auto px-4 py-8">
+                  {/* Promo Cards */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <PromoCards />
+                  </div>
+
+                  {/* Status, Tasks e Histórico */}
+                  <div>
+                    {activeTab === 'controle' && (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <StatusCard />
+                        <PendingTasks />
+                      </div>
+                    )}
+                    {activeTab === 'historico' && (
+                      <div className="mt-6">
+                        <HistoryList entries={historyEntries} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CSSTransition>
+            </SwitchTransition>
+          </>
         )}
 
-        {currentPage === 'dashboard' && (
-          <div className="container mx-auto px-4 py-8">
-            {/* Promo Cards */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              <PromoCards />
-            </div>
-
-            {/* Status, Tasks e Histórico */}
-            {activeTab === 'controle' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <StatusCard />
-                <PendingTasks />
-              </div>
-            )}
-            {activeTab === 'historico' && (
-              <div className="mt-6">
-                <HistoryList entries={historyEntries} />
-              </div>
-            )}
-          </div>
-        )}
-
-
-        {currentPage === 'funcionarios-ativos' && (
-          <ActiveEmployees 
-            onNavigate={handleNavigate} 
-            employees={employees}
-            onDeleteEmployee={handleDeleteEmployee}
-            onEditEmployee={handleEditEmployee}
-          />
-        )}
-        {/* Perfil do funcionário */}
-        {currentPage.startsWith('perfil-funcionario-') && (() => {
-          const id = currentPage.replace('perfil-funcionario-', '');
-          const funcionario = employees.find(e => e.id === id) || null;
-          return <PerfilFuncionario funcionario={funcionario} onUpdateEmployee={handleUpdateEmployee} onDismissEmployee={handleDismissEmployee} />;
-        })()}
         <SwitchTransition mode="out-in">
           <CSSTransition
             key={currentPage}
-            timeout={400}
-            classNames="fade-slide"
+            timeout={220}
+            classNames="page-transition"
+            unmountOnExit
           >
-            <div>
+            <div className="page-transition-wrapper">
+              {currentPage === 'funcionarios-ativos' && (
+                <ActiveEmployees 
+                  onNavigate={handleNavigate} 
+                  employees={employees}
+                  onDeleteEmployee={handleDeleteEmployee}
+                  onEditEmployee={handleEditEmployee}
+                />
+              )}
+              {/* Perfil do funcionário */}
+              {currentPage.startsWith('perfil-funcionario-') && (() => {
+                const id = currentPage.replace('perfil-funcionario-', '');
+                const funcionario = employees.find(e => e.id === id) || null;
+                return <PerfilFuncionario key={funcionario?.id ?? 'perfil-funcionario'} funcionario={funcionario} onUpdateEmployee={handleUpdateEmployee} onDismissEmployee={handleDismissEmployee} />;
+              })()}
               {currentPage === 'ferias-e-afastamentos' && (
                 <FeriasEAfastamentos onNovoLancamento={() => setCurrentPage('lancamento-licenca')} />
               )}
@@ -1587,12 +1614,9 @@ function App() {
               {currentPage === 'lancamento-individual' && (
                 <LancamentoIndividual />
               )}
-            </div>
-          </CSSTransition>
-                </SwitchTransition>
-                {currentPage === 'calendario' && (
-                  <Calendar />
-                )}
+              {currentPage === 'calendario' && (
+                <Calendar />
+              )}
         {currentPage === 'cadastro-funcionario' && (
           <EmployeeRegistration 
             onNavigate={handleNavigate} 
@@ -1828,26 +1852,48 @@ function App() {
             permissions={profilePermissions}
             onSave={handleSaveProfilePermissions}
           />
-        )}      </div>
+        )}
+            </div>
+          </CSSTransition>
+        </SwitchTransition>
+      </div>
     {/* Estilos da transição */}
     <style>{`
-      .fade-slide-enter {
+      .page-transition-enter {
         opacity: 0;
-        transform: translateY(30px);
+        transform: translate3d(0, 10px, 0) scale(0.995);
       }
-      .fade-slide-enter-active {
+      .page-transition-enter-active {
         opacity: 1;
-        transform: translateY(0);
-        transition: opacity 400ms, transform 400ms;
+        transform: translate3d(0, 0, 0) scale(1);
+        transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
       }
-      .fade-slide-exit {
+      .page-transition-exit {
         opacity: 1;
-        transform: translateY(0);
+        transform: translate3d(0, 0, 0) scale(1);
       }
-      .fade-slide-exit-active {
+      .page-transition-exit-active {
         opacity: 0;
-        transform: translateY(-30px);
-        transition: opacity 400ms, transform 400ms;
+        transform: translate3d(0, -8px, 0) scale(0.995);
+        transition: opacity 180ms ease, transform 180ms ease;
+      }
+      .dashboard-tab-enter {
+        opacity: 0;
+        transform: translate3d(0, 8px, 0);
+      }
+      .dashboard-tab-enter-active {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+        transition: opacity 180ms ease, transform 180ms ease;
+      }
+      .dashboard-tab-exit {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+      }
+      .dashboard-tab-exit-active {
+        opacity: 0;
+        transform: translate3d(0, -6px, 0);
+        transition: opacity 150ms ease, transform 150ms ease;
       }
     `}</style>
     </div>

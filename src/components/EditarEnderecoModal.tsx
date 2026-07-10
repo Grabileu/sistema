@@ -1,5 +1,6 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import { buscarEnderecoPorCep } from '../utils/cep';
+import GenericEditModal from './GenericEditModal';
 
 type EditarEnderecoModalValues = {
   cep: string;
@@ -48,42 +49,29 @@ const EditarEnderecoModal: React.FC<EditarEnderecoModalProps> = ({ open, values,
     }
   };
 
-  useEffect(() => {
-    if (open) {
-      document.body.classList.add('overflow-hidden');
-    } else {
-      document.body.classList.remove('overflow-hidden');
+  const handleSubmit = () => {
+    setTouched(true);
+    if (!values.cep || values.cep.replace(/\D/g, '').length !== 8) {
+      return;
     }
-    return () => {
-      document.body.classList.remove('overflow-hidden');
-    };
-  }, [open]);
+    onSubmit();
+  };
 
-  if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-8 relative animate-fade-in">
-        <button
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold"
-          onClick={onClose}
-          aria-label="Fechar"
-        >
-          ×
-        </button>
-        <h2 className="text-2xl font-semibold text-gray-900 mb-6">Editar dados do funcionário</h2>
-        <hr className="my-4" />
-        <h3 className="text-lg font-bold text-indigo-700 mb-4">Endereço</h3>
-        <form
-          onSubmit={e => {
-            e.preventDefault();
-            setTouched(true);
-            if (!values.cep || values.cep.replace(/\D/g, '').length !== 8) {
-              // Apenas mostrar mensagem abaixo do campo, não alert
-              return;
-            }
-            onSubmit();
-          }}
-        >
+    <GenericEditModal
+      isOpen={open}
+      title="Editar dados do funcionário"
+      onClose={onClose}
+      onSubmit={handleSubmit}
+      submitButtonText="Salvar alterações"
+    >
+      <h3 className="text-lg font-bold text-indigo-700 mb-4">Endereço</h3>
+      <form
+        onSubmit={e => {
+          e.preventDefault();
+          handleSubmit();
+        }}
+      >
           <div className="grid grid-cols-1 md:grid-cols-8 gap-4 mb-4">
             <div className="md:col-span-2">
               <label className="block text-gray-700 text-sm mb-1 font-medium">CEP<span className="text-red-500">*</span></label>
@@ -175,13 +163,8 @@ const EditarEnderecoModal: React.FC<EditarEnderecoModalProps> = ({ open, values,
               />
             </div>
           </div>
-          <div className="flex flex-col gap-2 mt-8">
-            <button type="submit" className="w-full py-2 rounded bg-indigo-700 text-white font-semibold hover:bg-indigo-800 transition text-xs">Salvar alterações</button>
-            <button type="button" className="w-full py-2 rounded bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition text-xs" onClick={onClose}>Cancelar</button>
-          </div>
         </form>
-      </div>
-    </div>
+    </GenericEditModal>
   );
 };
 

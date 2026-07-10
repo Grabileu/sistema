@@ -520,6 +520,18 @@ const formatDateLabel = (date: Date | null) => {
   return `${day}/${month}/${year}`
 }
 
+const getCurrentFeriasCycleStart = (admissao: Date, referenceDate: Date) => {
+  const hasPassedAnniversary =
+    referenceDate.getMonth() > admissao.getMonth() ||
+    (referenceDate.getMonth() === admissao.getMonth() && referenceDate.getDate() >= admissao.getDate())
+
+  const yearsSinceAdmission = referenceDate.getFullYear() - admissao.getFullYear()
+  const cycleYearOffset = hasPassedAnniversary ? yearsSinceAdmission : Math.max(0, yearsSinceAdmission - 1)
+  const cycleStart = new Date(admissao.getFullYear() + cycleYearOffset, admissao.getMonth(), admissao.getDate())
+
+  return cycleStart > referenceDate ? null : cycleStart
+}
+
 const getLancamentoNome = (item: LancamentoLicencaResumo, employeeNameById: Map<string, string>) => {
   const idCandidates = [item.colaboradorId, item.funcionarioId]
     .map((value) => String(value || '').trim())
@@ -619,6 +631,8 @@ const FeriasEAfastamentos: React.FC<FeriasEAfastamentosProps> = ({ onNovoLancame
 
   const isCurrentYear = year === today.getFullYear()
   const isMonthlyView = viewMode === 'mensal'
+  const referenceDay = Math.min(today.getDate(), new Date(year, selectedMonth + 1, 0).getDate())
+  const referenceDateLabel = `${String(referenceDay).padStart(2, '0')}/${String(selectedMonth + 1).padStart(2, '0')}/${year}`
 
   const getLancamentoStatus = (dataInicio: Date, dataTermino: Date): 'Agendado' | 'Em andamento' | 'Encerrado' => {
     const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
@@ -1103,8 +1117,10 @@ const FeriasEAfastamentos: React.FC<FeriasEAfastamentosProps> = ({ onNovoLancame
       }
 
       const startsInReferenceMonth = inicio >= startOfReferenceMonth && inicio <= endOfReferenceMonth
+      const isFutureRelativeToReferenceDate = inicio > startOfReferenceDate
+      const isInProgressAtReferenceDate = inicio <= startOfReferenceDate && termino >= startOfReferenceDate
 
-      if (inicio > startOfReferenceDate && startsInReferenceMonth) {
+      if (isFutureRelativeToReferenceDate && startsInReferenceMonth) {
         const diasParaInicio = Math.max(0, Math.floor((inicio.getTime() - startOfReferenceDate.getTime()) / (1000 * 60 * 60 * 24)))
         const existenteAgendado = feriasAgendadasMap.get(key)
 
@@ -1114,7 +1130,6 @@ const FeriasEAfastamentos: React.FC<FeriasEAfastamentosProps> = ({ onNovoLancame
         return
       }
 
-      const isInProgressAtReferenceDate = inicio <= startOfReferenceDate && termino >= startOfReferenceDate
       if (isInProgressAtReferenceDate) {
         const diasParaTermino = Math.max(0, Math.floor((termino.getTime() - startOfReferenceDate.getTime()) / (1000 * 60 * 60 * 24)))
         const existenteEmAndamento = feriasEmAndamentoMap.get(key)
@@ -1198,32 +1213,28 @@ const FeriasEAfastamentos: React.FC<FeriasEAfastamentosProps> = ({ onNovoLancame
       if (dataElegivel > startOfToday) continue
 
       const employeeNormName = normalizeText(employee.nomeCompleto)
+      const cicloAtualInicio = getCurrentFeriasCycleStart(admissao, startOfToday)
 
-      const lancamentosDoColaborador = lancamentosFeriasSemFiltro.filter((item) => {
-        const idMatch = item.colaboradorId && String(item.colaboradorId) === employee.id
-        const nameMatch = !idMatch && item.colaboradorNome && normalizeText(String(item.colaboradorNome)) === employeeNormName
-        return Boolean(idMatch || nameMatch)
-      })
-
-      let hasFeriasIniciadas = false
-      let hasFeriasAgendadas = false
-
-      for (const lancamento of lancamentosDoColaborador) {
-        if (!lancamento.dataInicio) continue
-        const inicio = parseDateString(String(lancamento.dataInicio))
-        if (!inicio) continue
-
-        if (inicio <= startOfToday) {
-          hasFeriasIniciadas = true
-        } else {
-          hasFeriasAgendadas = true
-        }
+      if (!cicloAtualInicio) {
+        continue
       }
 
-      if (hasFeriasAgendadas) {
-      } else if (!hasFeriasIniciadas) {
+      const lancamentosDoColaborador = lancamentosFeriasSemFiltro.filter((item) => {
+        const idMatches = [item.colaboradorId, item.funcionarioId].some((value) => String(value || '').trim() === employee.id)
+        const nameCandidates = [item.colaboradorNome, item.funcionarioNome, item.nomeColaborador, item.nomeFuncionario, item.nome]
+        const nameMatch = nameCandidates.some((value) => normalizeText(String(value || '')) === employeeNormName)
+        return Boolean(idMatches || nameMatch)
+      })
+
+      const hasFeriasNoCicloAtual = lancamentosDoColaborador.some((lancamento) => {
+        if (!lancamento.dataInicio) return false
+        const inicio = parseDateString(String(lancamento.dataInicio))
+        return Boolean(inicio && inicio >= cicloAtualInicio)
+      })
+
+      if (!hasFeriasNoCicloAtual) {
         pendencias += 1
-        const diasPendencia = Math.max(0, Math.floor((startOfToday.getTime() - dataElegivel.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+        const diasPendencia = Math.max(0, Math.floor((startOfToday.getTime() - cicloAtualInicio.getTime()) / (1000 * 60 * 60 * 24)) + 1)
 
         pendenciasInfos.push({
           nome: employee.nomeCompleto,
@@ -1797,13 +1808,7 @@ const FeriasEAfastamentos: React.FC<FeriasEAfastamentosProps> = ({ onNovoLancame
     }
   }
 
-  const handleAbrirConfirmacaoExclusao = (item: { lancamentoId: string; nome: string }) => {
-    setAusenciaDetalhesModal(null)
-    setMenuFeriasAbertoId(null)
-    setPendingDeleteFerias({ lancamentoId: item.lancamentoId, nome: item.nome })
-  }
-
-  const handleAbrirConfirmacaoExclusaoLancamento = (lancamentoId: string, nome: string) => {
+  const handleAbrirConfirmacaoExclusao = (lancamentoId: string, nome: string) => {
     setAusenciaDetalhesModal(null)
     setMenuFeriasAbertoId(null)
     setPendingDeleteFerias({ lancamentoId, nome })
@@ -2204,7 +2209,7 @@ const FeriasEAfastamentos: React.FC<FeriasEAfastamentosProps> = ({ onNovoLancame
                       <button
                         type="button"
                         className="inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-50"
-                        onClick={() => handleAbrirConfirmacaoExclusaoLancamento(detalhe.lancamentoId, `${ausenciaDetalhesModal.nome} - ${detalhe.tipoLicenca}`)}
+                        onClick={() => handleAbrirConfirmacaoExclusao(detalhe.lancamentoId, `${ausenciaDetalhesModal.nome} - ${detalhe.tipoLicenca}`)}
                       >
                         <Trash2 size={12} />
                         Excluir
@@ -2594,26 +2599,26 @@ const FeriasEAfastamentos: React.FC<FeriasEAfastamentosProps> = ({ onNovoLancame
         </div>
       </section>
 
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="mb-6 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2 py-1">
+          <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">
             <button
               type="button"
               onClick={() => setYear((prev) => prev - 1)}
-              className="rounded-md p-1.5 text-slate-500 transition hover:bg-white hover:text-slate-700"
+              className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
               aria-label="Ano anterior"
             >
               <ChevronLeft size={16} />
             </button>
 
-            <div className="rounded-lg bg-white px-3 py-1.5 shadow-sm">
-              <span className="text-sm font-semibold text-slate-700">{year}</span>
+            <div className="flex min-w-[90px] items-center justify-center rounded-xl bg-slate-50 px-3 py-2">
+              <span className="text-sm font-semibold text-slate-800">{year}</span>
             </div>
 
             <button
               type="button"
               onClick={() => setYear((prev) => prev + 1)}
-              className="rounded-md p-1.5 text-slate-500 transition hover:bg-white hover:text-slate-700"
+              className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
               aria-label="Próximo ano"
             >
               <ChevronRight size={16} />
@@ -2642,10 +2647,10 @@ const FeriasEAfastamentos: React.FC<FeriasEAfastamentosProps> = ({ onNovoLancame
                   }
                 }}
                 placeholder="Buscar funcionário"
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 pr-9 text-sm text-slate-700 placeholder-slate-400"
+                className="w-[220px] rounded-xl border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm text-slate-700 shadow-sm placeholder:text-slate-400 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100"
               />
               {showNomeBuscaSugestoes && (
-                <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+                <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
                   {nomeBuscaSugestoes.length > 0 ? (
                     nomeBuscaSugestoes.map((option) => (
                       <button
@@ -2668,32 +2673,32 @@ const FeriasEAfastamentos: React.FC<FeriasEAfastamentosProps> = ({ onNovoLancame
               <Filter size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
             </div>
 
-            <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1">
+            <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
               <button
                 type="button"
                 onClick={() => setViewMode('anual')}
-                className={`rounded-md px-3 py-1.5 text-sm ${viewMode === 'anual' ? 'bg-blue-50 font-semibold text-blue-700' : 'font-medium text-slate-500 hover:bg-slate-50'}`}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${viewMode === 'anual' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'}`}
               >
                 Anual
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode('mensal')}
-                className={`rounded-md px-3 py-1.5 text-sm ${viewMode === 'mensal' ? 'bg-blue-50 font-semibold text-blue-700' : 'font-medium text-slate-500 hover:bg-slate-50'}`}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${viewMode === 'mensal' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'}`}
               >
                 Mensal
               </button>
             </div>
 
             {viewMode === 'mensal' && (
-              <div className="w-[170px]">
+              <div className="w-[180px] rounded-xl border border-slate-200 bg-white p-0.5 shadow-sm">
                 <Select
                   value={selectedMonth}
                   onChange={(value) => setSelectedMonth(Number(value))}
                   options={months.map((monthLabel, monthIndex) => ({ label: monthLabel, value: monthIndex }))}
                   placeholder="Selecionar mês"
-                  buttonClassName="h-[38px] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-none focus:border-blue-300 focus:ring-blue-100"
-                  menuClassName="rounded-lg border-slate-200"
+                  buttonClassName="h-[40px] rounded-lg border-0 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-none focus:border-blue-300 focus:ring-0"
+                  menuClassName="rounded-xl border-slate-200"
                 />
               </div>
             )}
@@ -2701,7 +2706,7 @@ const FeriasEAfastamentos: React.FC<FeriasEAfastamentosProps> = ({ onNovoLancame
             <button
               type="button"
               onClick={abrirFiltros}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-100 hover:text-slate-900"
             >
               <ListFilter size={14} />
               Filtrar
@@ -2711,10 +2716,8 @@ const FeriasEAfastamentos: React.FC<FeriasEAfastamentosProps> = ({ onNovoLancame
                 </span>
               )}
             </button>
-
           </div>
         </div>
-
       </section>
 
       <section className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -2729,12 +2732,12 @@ const FeriasEAfastamentos: React.FC<FeriasEAfastamentosProps> = ({ onNovoLancame
           </div>
           <p className="text-3xl font-bold leading-none text-slate-800">{pendenciasFerias}</p>
           <h3 className="text-sm font-semibold text-slate-800">
-            {pendenciasFerias > 0 ? 'Férias vencidas para regularizar' : 'Tudo em dia'}
+            {pendenciasFerias > 0 ? 'Ciclos de férias pendentes' : 'Tudo em dia'}
           </h3>
           <p className="mt-1 text-sm text-slate-500">
             {pendenciasFerias > 0
-              ? 'Colaboradores com 1 ano ou mais sem férias iniciadas.'
-              : 'Nenhuma pendência de férias vencidas no momento.'}
+              ? 'Colaboradores com ciclo anual já vencido e sem férias registradas para o período atual.'
+              : 'Nenhuma pendência de férias no ciclo atual.'}
           </p>
           {pendenciasDetalhes.length > 0 && (
             <div className={`mt-2 space-y-1 ${pendenciasDetalhes.length > 4 ? 'max-h-28 overflow-y-auto pr-1' : ''}`}>
@@ -2764,12 +2767,12 @@ const FeriasEAfastamentos: React.FC<FeriasEAfastamentosProps> = ({ onNovoLancame
           </div>
           <p className="text-3xl font-bold leading-none text-slate-800">{ausenciasMes}</p>
           <h3 className="text-sm font-semibold text-slate-800">
-            {ausenciasMes > 0 ? 'Colaboradores com ausência no mês' : 'Sem ausências'}
+            {ausenciasMes > 0 ? 'Colaboradores com afastamento no mês' : 'Sem afastamentos'}
           </h3>
           <p className="mt-1 text-sm text-slate-500">
             {ausenciasMes > 0
-              ? 'Total de ausências no mês de referência, desconsiderando férias.'
-              : 'Nenhuma ausência registrada para o mês de referência (sem contar férias).'}
+              ? `Registros que cruzam o mês de referência (${referenceDateLabel}) e não incluem férias.`
+              : 'Nenhum afastamento registrado para o mês de referência (sem contar férias).'}
           </p>
           {ausenciasDetalhesMes.length > 0 && (
             <div className="mt-2 max-h-28 space-y-1 overflow-y-auto pr-1">
@@ -2810,12 +2813,12 @@ const FeriasEAfastamentos: React.FC<FeriasEAfastamentosProps> = ({ onNovoLancame
           </div>
           <p className="text-3xl font-bold leading-none text-slate-800">{feriasAgendadas}</p>
           <h3 className="text-sm font-semibold text-slate-800">
-            {feriasAgendadas > 0 ? 'Férias agendadas aguardando início' : 'Sem eventos próximos'}
+            {feriasAgendadas > 0 ? 'Férias com início previsto' : 'Sem férias agendadas'}
           </h3>
           <p className="mt-1 text-sm text-slate-500">
             {feriasAgendadas > 0
-              ? 'Colaboradores já lançados e aguardando o dia de início das férias no mês de referência.'
-              : 'Nenhum colaborador com férias agendadas para iniciar no mês de referência.'}
+              ? `Férias já lançadas com início previsto para o mês de referência (${referenceDateLabel}).`
+              : 'Nenhum colaborador com férias agendadas para o mês de referência.'}
           </p>
           {feriasAgendadasDetalhes.length > 0 && (
             <div className={`mt-2 space-y-1 ${feriasAgendadasDetalhes.length > 4 ? 'max-h-28 overflow-y-auto pr-1' : ''}`}>
@@ -2867,7 +2870,7 @@ const FeriasEAfastamentos: React.FC<FeriasEAfastamentosProps> = ({ onNovoLancame
                         className="block w-full rounded px-2 py-1 text-left text-xs font-medium text-red-600 hover:bg-red-50"
                         onClick={(event) => {
                           event.stopPropagation()
-                          handleAbrirConfirmacaoExclusao(item)
+                          handleAbrirConfirmacaoExclusao(item.lancamentoId, item.nome)
                         }}
                       >
                         Excluir
@@ -2891,11 +2894,11 @@ const FeriasEAfastamentos: React.FC<FeriasEAfastamentosProps> = ({ onNovoLancame
           </div>
           <p className="text-3xl font-bold leading-none text-slate-800">{feriasEmAndamento}</p>
           <h3 className="text-sm font-semibold text-slate-800">
-            {feriasEmAndamento > 0 ? 'Colaboradores em período de férias' : 'Sem férias em andamento'}
+            {feriasEmAndamento > 0 ? 'Colaboradores em férias' : 'Sem férias em andamento'}
           </h3>
           <p className="mt-1 text-sm text-slate-500">
             {feriasEmAndamento > 0
-              ? 'Férias iniciadas e ainda não finalizadas na data de referência.'
+              ? `Férias iniciadas antes de ${referenceDateLabel} e ainda não encerradas.`
               : 'Nenhum colaborador em férias na data de referência.'}
           </p>
           {feriasEmAndamentoDetalhes.length > 0 && (
@@ -2948,7 +2951,7 @@ const FeriasEAfastamentos: React.FC<FeriasEAfastamentosProps> = ({ onNovoLancame
                         className="block w-full rounded px-2 py-1 text-left text-xs font-medium text-red-600 hover:bg-red-50"
                         onClick={(event) => {
                           event.stopPropagation()
-                          handleAbrirConfirmacaoExclusao(item)
+                          handleAbrirConfirmacaoExclusao(item.lancamentoId, item.nome)
                         }}
                       >
                         Excluir

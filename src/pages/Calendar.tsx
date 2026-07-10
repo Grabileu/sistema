@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { CalendarDays, ArrowLeft, ArrowRight, Filter, Search, User } from 'lucide-react'
+import { CalendarDays, ArrowLeft, ArrowRight, Filter, Search, User, Plane, Stethoscope, AlertTriangle, CalendarClock, BadgeCheck } from 'lucide-react'
 import { parseDateString } from '../utils/formatters'
 
 interface EmployeeResumo {
@@ -93,6 +93,39 @@ const parseFeriadoDateParts = (value: string): { day: number; month: number; yea
 
 const buildAvatarUrl = (name: string) =>
   `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=E0E7EF&color=2563EB`
+
+const getBadgeMeta = (evento: { tipo: string; subtipo?: string }) => {
+  const label = String(evento.subtipo || '').trim()
+  const normalized = label.toLowerCase()
+
+  if (evento.tipo === 'falta') {
+    return { label: 'Falta', className: 'border-red-200 bg-red-50 text-red-700', icon: <AlertTriangle size={10} className="shrink-0" /> }
+  }
+
+  if (evento.tipo === 'atraso') {
+    return { label: 'Atraso', className: 'border-amber-200 bg-amber-50 text-amber-700', icon: <CalendarClock size={10} className="shrink-0" /> }
+  }
+
+  if (evento.tipo === 'licenca') {
+    if (normalized.includes('atestado')) {
+      return { label: 'Atestado', className: 'border-sky-200 bg-sky-50 text-sky-700', icon: <Stethoscope size={10} className="shrink-0" /> }
+    }
+    if (normalized.includes('férias') || normalized.includes('ferias')) {
+      return { label: 'Férias', className: 'border-emerald-200 bg-emerald-50 text-emerald-700', icon: <Plane size={10} className="shrink-0" /> }
+    }
+    return { label: label || 'Licença', className: 'border-violet-200 bg-violet-50 text-violet-700', icon: <BadgeCheck size={10} className="shrink-0" /> }
+  }
+
+  if (evento.tipo === 'admissao') {
+    return { label: 'Admissão', className: 'border-purple-200 bg-purple-50 text-purple-700', icon: <BadgeCheck size={10} className="shrink-0" /> }
+  }
+
+  if (evento.tipo === 'demissao') {
+    return { label: 'Demissão', className: 'border-slate-200 bg-slate-50 text-slate-700', icon: <AlertTriangle size={10} className="shrink-0" /> }
+  }
+
+  return { label: 'Evento', className: 'border-slate-200 bg-slate-50 text-slate-700', icon: <CalendarDays size={10} className="shrink-0" /> }
+}
 
 const hashString = (value: string) =>
   value.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
@@ -374,44 +407,93 @@ const Calendar: React.FC = () => {
       </div>
 
       <div className="container mx-auto px-6 py-6">
-        <div className="bg-white rounded-xl shadow p-6 mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <CalendarDays size={22} className="text-blue-700" />
-            <span className="font-semibold text-lg">{month} {year}</span>
-            <button className="ml-2 p-1 rounded hover:bg-gray-100" onClick={goToPreviousMonth}>
-              <ArrowLeft size={18} />
-            </button>
-            <button className="p-1 rounded hover:bg-gray-100" onClick={goToNextMonth}>
-              <ArrowRight size={18} />
-            </button>
+        <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="rounded-2xl bg-blue-50 p-2.5 text-blue-700">
+              <CalendarDays size={20} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Visualização mensal</p>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-semibold text-slate-900">{month} {year}</span>
+                <div className="flex items-center gap-1">
+                  <button className="rounded-full p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700" onClick={goToPreviousMonth}>
+                    <ArrowLeft size={17} />
+                  </button>
+                  <button className="rounded-full p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700" onClick={goToNextMonth}>
+                    <ArrowRight size={17} />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
               <input
                 type="text"
                 placeholder="Buscar colaborador"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-8 pr-3 py-2 rounded border border-gray-200 text-sm bg-white"
+                className="w-56 rounded-full border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white"
               />
-              <Search size={16} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             </div>
-            <button className="flex items-center gap-2 px-3 py-2 rounded border border-gray-200 text-gray-700 hover:bg-gray-50">
-              <Filter size={16} />
+            <button className="flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50">
+              <Filter size={15} />
               Filtrar
             </button>
           </div>
         </div>
 
-        <div className="rounded-2xl shadow-lg bg-[#f5f6f8] overflow-x-auto border border-gray-300 relative w-full">
-          <table className="min-w-full border-separate border-spacing-0 w-full">
+        <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-3 shadow-sm">
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 shadow-sm">
+              <span className="rounded-full bg-white p-1 shadow-sm">
+                <AlertTriangle size={11} />
+              </span>
+              Falta
+            </span>
+            <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 shadow-sm">
+              <span className="rounded-full bg-white p-1 shadow-sm">
+                <CalendarClock size={11} />
+              </span>
+              Atraso
+            </span>
+            <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 shadow-sm">
+              <span className="rounded-full bg-white p-1 shadow-sm">
+                <Stethoscope size={11} />
+              </span>
+              Atestado
+            </span>
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm">
+              <span className="rounded-full bg-white p-1 shadow-sm">
+                <Plane size={11} />
+              </span>
+              Férias
+            </span>
+            <span className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 shadow-sm">
+              <span className="rounded-full bg-white p-1 shadow-sm">
+                <BadgeCheck size={11} />
+              </span>
+              Licença
+            </span>
+          </div>
+        </div>
+
+        <div className="relative w-full overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50 shadow-sm">
+          <table className="w-full min-w-full border-separate border-spacing-0">
             <thead className="sticky top-0 z-10">
             <tr>
-              <th className="w-[240px] min-w-[240px] max-w-[240px] py-1 px-1 text-left text-gray-700 font-bold border-r border-b border-gray-300 bg-[#e4e7ec] align-middle">
-                <div className="flex items-center gap-2">
-                  <User size={20} className="text-gray-500" />
-                  <span className="text-gray-600 font-semibold text-base">Colaboradores</span>
+              <th className="w-[240px] min-w-[240px] max-w-[240px] border-r border-b border-slate-200 bg-slate-100 px-3 py-2 text-left align-middle">
+                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2 shadow-sm">
+                  <div className="rounded-full bg-blue-50 p-1.5 text-blue-600">
+                    <User size={15} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700">Colaboradores</p>
+                    <p className="text-[11px] text-slate-500">Nome e função</p>
+                  </div>
                 </div>
               </th>
               {days.map((day) => {
@@ -423,18 +505,18 @@ const Calendar: React.FC = () => {
                   <th
                     key={day}
                     title={hasFeriado ? `Feriado: ${feriadosNoDia.join(', ')}` : undefined}
-                    className={`w-[80px] min-w-[80px] max-w-[80px] py-1 px-1 text-center text-gray-700 font-bold border-r border-b border-gray-300 align-middle ${day === 1 ? 'border-l border-gray-300' : ''} ${isToday ? 'bg-blue-100' : hasFeriado ? 'bg-yellow-100' : 'bg-[#e4e7ec]'}`}
+                    className={`w-[80px] min-w-[80px] max-w-[80px] border-r border-b border-slate-200 px-1 py-1 text-center align-middle font-bold text-gray-700 ${day === 1 ? 'border-l border-slate-200' : ''} ${isToday ? 'bg-blue-100' : hasFeriado ? 'bg-amber-50' : 'bg-white'}`}
                   >
-                    <div className="flex flex-col justify-center h-full items-center">
-                      <span className="text-base font-bold relative flex items-center justify-center" style={{height: '28px'}}>
+                    <div className="flex h-full flex-col items-center justify-center rounded-lg border border-white/70 bg-white/70 px-1 py-1 shadow-sm">
+                      <span className="relative flex h-7 items-center justify-center text-base font-bold">
                         {isToday && (
-                          <span className="absolute w-7 h-7 rounded-full bg-blue-600 opacity-80" style={{zIndex:0}}></span>
+                          <span className="absolute h-7 w-7 rounded-full bg-blue-600 opacity-80" style={{zIndex:0}}></span>
                         )}
-                        <span className={isToday ? 'relative z-10 text-white font-bold' : ''}>{day}</span>
+                        <span className={isToday ? 'relative z-10 font-bold text-white' : ''}>{day}</span>
                       </span>
                       <span className="text-[10px] text-gray-400">{weekDays[new Date(year, monthIdx, day).getDay()]}</span>
                       {hasFeriado && (
-                        <span className="text-[10px] text-yellow-700 font-semibold mt-0.5" style={{lineHeight:'1'}}>
+                        <span className="mt-0.5 text-[10px] font-semibold text-yellow-700" style={{lineHeight:'1'}}>
                           {feriadosNoDia.join(', ')}
                         </span>
                       )}
@@ -453,12 +535,12 @@ const Calendar: React.FC = () => {
             )}
             {colaboradores.map((colab) => (
               <tr key={colab.key}>
-                <th scope="row" className="w-[240px] min-w-[240px] max-w-[240px] h-16 border-r border-b border-gray-300 bg-white align-middle font-normal">
-                  <div className="flex items-center gap-2">
-                    <img src={buildAvatarUrl(colab.nome)} alt={colab.nome} className="w-9 h-9 rounded-full border border-blue-100" />
-                    <div className="min-w-0 flex-1 flex flex-col justify-center text-left">
-                      <span className="text-blue-700 font-semibold text-sm leading-tight truncate">{colab.nome}</span>
-                      <span className="text-[11px] text-gray-400 truncate leading-tight mt-0.5">{colab.cargo}</span>
+                <th scope="row" className="h-16 w-[240px] min-w-[240px] max-w-[240px] border-r border-b border-slate-200 bg-white align-middle font-normal">
+                  <div className="mx-2 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 shadow-sm">
+                    <img src={buildAvatarUrl(colab.nome)} alt={colab.nome} className="h-9 w-9 rounded-full border border-blue-100" />
+                    <div className="flex min-w-0 flex-1 flex-col justify-center text-left">
+                      <span className="truncate text-sm font-semibold leading-tight text-blue-700">{colab.nome}</span>
+                      <span className="mt-0.5 truncate text-[11px] leading-tight text-gray-400">{colab.cargo}</span>
                     </div>
                   </div>
                 </th>
@@ -483,7 +565,6 @@ const Calendar: React.FC = () => {
                   })
 
                   const ativo = eventosNoDia.length > 0
-                  // Tooltip detalhado para todos os tipos
                   const lancamentosTooltip = eventosNoDia.map((evento) => {
                     if (evento.tipo === 'licenca') {
                       return `${evento.subtipo}: ${evento.dataInicio.toLocaleDateString('pt-BR')} a ${evento.dataTermino.toLocaleDateString('pt-BR')}`
@@ -505,49 +586,27 @@ const Calendar: React.FC = () => {
                     <td
                       key={`${colab.key}-${day}`}
                       title={tooltip || undefined}
-                      className={`w-[80px] min-w-[80px] max-w-[80px] h-16 border-r border-b border-gray-300 transition align-middle ${day === 1 ? 'border-l border-gray-300' : ''} ${isToday ? 'bg-blue-100' : 'bg-[#f5f6f8]'}`}
+                      className={`h-16 w-[80px] min-w-[80px] max-w-[80px] border-r border-b border-slate-200 align-middle transition ${day === 1 ? 'border-l border-slate-200' : ''} ${isToday ? 'bg-blue-50' : 'bg-white'}`}
                     >
-                      <div className="flex flex-col items-center justify-center h-full w-full gap-0.5">
-                        {eventosNoDia.map((evento, idx) => {
-                          let label = ''
-                          let cor = ''
-                          if (evento.tipo === 'falta') {
-                            label = 'Falta'
-                            cor = 'bg-red-100 text-red-800 border-red-300'
-                          } else if (evento.tipo === 'atraso') {
-                            label = 'Atrasado'
-                            cor = 'bg-yellow-100 text-yellow-800 border-yellow-300'
-                          } else if (evento.tipo === 'licenca') {
-                            if (evento.subtipo && evento.subtipo.trim().length > 0) {
-                              label = evento.subtipo.trim()
-                            } else {
-                              label = 'Licença'
-                            }
-                            // Atestado azul, Férias verde, outros licenças verde
-                            if (label.toLowerCase().includes('atestado')) {
-                              cor = 'bg-blue-100 text-blue-800 border-blue-300'
-                            } else if (label.toLowerCase().includes('férias')) {
-                              cor = 'bg-green-100 text-green-800 border-green-300'
-                            } else {
-                              cor = 'bg-green-100 text-green-800 border-green-300'
-                            }
-                          } else if (evento.tipo === 'admissao') {
-                            label = 'Admissão'
-                            cor = 'bg-purple-100 text-purple-800 border-purple-300'
-                          } else if (evento.tipo === 'demissao') {
-                            label = 'Demissão'
-                            cor = 'bg-gray-300 text-gray-700 border-gray-400'
-                          }
-                          return (
-                            <span
-                              key={idx}
-                              className={`px-1.5 py-0.5 rounded-full border text-[11px] font-semibold shadow-sm ${cor} mb-0.5`}
-                              style={{minWidth: '40px', maxWidth: '90px', textAlign: 'center', whiteSpace: 'normal', overflowWrap: 'break-word', wordBreak: 'break-word', lineHeight: '1.1'}}
-                            >
-                              {label}
-                            </span>
-                          )
-                        })}
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-1 px-1 py-1">
+                        {eventosNoDia.length > 0 && (
+                          <div className="flex w-full flex-col items-center gap-1">
+                            {eventosNoDia.map((evento, idx) => {
+                              const meta = getBadgeMeta(evento)
+                              return (
+                                <span
+                                  key={`${colab.key}-${day}-${idx}`}
+                                  className={`inline-flex max-w-full items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold shadow-sm ${meta.className}`}
+                                  title={tooltip || undefined}
+                                  style={{ lineHeight: '1.1' }}
+                                >
+                                  {meta.icon}
+                                  <span className="truncate">{meta.label}</span>
+                                </span>
+                              )
+                            })}
+                          </div>
+                        )}
                       </div>
                     </td>
                   )

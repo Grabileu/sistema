@@ -1,6 +1,7 @@
 import React from 'react';
 import { formatCurrency } from '../utils/formatters';
 import Select from './Select';
+import GenericEditModal from './GenericEditModal';
 
 type EditarSindicatoModalValues = {
   contribui: string;
@@ -22,8 +23,6 @@ const CONTRIBUI_OPTIONS = [
   { label: 'Não', value: 'não' },
 ];
 
-import { useEffect } from 'react';
-
 const EditarSindicatoModal: React.FC<EditarSindicatoModalProps> = ({
   open,
   values,
@@ -31,25 +30,14 @@ const EditarSindicatoModal: React.FC<EditarSindicatoModalProps> = ({
   onClose,
   onSubmit,
 }) => {
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [open]);
-  if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-      <div className="bg-white rounded-xl shadow-lg max-w-3xl w-full p-4 md:p-12 relative max-h-screen overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900">Editar dados do funcionário</h2>
-          <hr className="my-4" />
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl font-bold">×</button>
-        </div>
+    <GenericEditModal
+      isOpen={open}
+      title="Editar dados do funcionário"
+      onClose={onClose}
+      onSubmit={onSubmit}
+      submitButtonText="Salvar alterações"
+    >
         <div className="mb-6">
           <span className="text-indigo-700 font-bold text-lg">Sindicato</span>
         </div>
@@ -89,13 +77,8 @@ const EditarSindicatoModal: React.FC<EditarSindicatoModalProps> = ({
               onChange={e => onChange('nome', e.target.value)}
             />
           </div>
-          <div className="flex flex-col gap-2 mt-8">
-            <button type="submit" className="w-full py-2 rounded bg-indigo-700 text-white font-semibold hover:bg-indigo-800 transition text-xs">Salvar alterações</button>
-            <button type="button" className="w-full py-2 rounded bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition text-xs" onClick={onClose}>Cancelar</button>
-          </div>
         </form>
-      </div>
-    </div>
+    </GenericEditModal>
   );
 };
 

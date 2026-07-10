@@ -178,28 +178,28 @@ const Select: React.FC<SelectProps> = ({
         }}
         onClick={() => setOpen((prev) => !prev)}
         onKeyDown={handleButtonKeyDown}
-        className={`w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 flex items-center justify-between focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-100 ${buttonClassName}`}
+        className={`w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 shadow-sm flex items-center justify-between focus:outline-none focus:border-blue-300 focus:bg-white focus:ring-2 focus:ring-blue-100 ${buttonClassName}`}
       >
-        <span className={selectedOption ? 'text-gray-700' : 'text-gray-500'}>{displayLabel}</span>
-        <ChevronDown size={16} className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <span className={selectedOption ? 'text-slate-700' : 'text-slate-500'}>{displayLabel}</span>
+        <ChevronDown size={16} className={`text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
-        <div className={`absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-20 max-h-64 overflow-auto ${menuClassName}`}>
+        <div className={`absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 max-h-64 overflow-auto ${menuClassName}`}>
           {showSearchBar && options.length > 15 && (
-            <div className="sticky top-0 bg-white z-10 p-2 border-b border-gray-100">
+            <div className="sticky top-0 z-10 border-b border-slate-100 bg-white p-2">
               <input
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar..."
-                className="w-full px-2 py-1 border border-gray-200 rounded text-sm focus:outline-none"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm text-slate-700 focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                 autoFocus
               />
             </div>
           )}
           {filteredOptions.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-gray-400">Nenhuma opção encontrada</div>
+            <div className="px-3 py-2 text-sm text-slate-400">Nenhuma opção encontrada</div>
           ) : (
             filteredOptions.map((option, index) => (
               <button
@@ -207,7 +207,7 @@ const Select: React.FC<SelectProps> = ({
                 type="button"
                 onClick={() => selectAtIndex(options.indexOf(option))}
                 onMouseEnter={() => setHighlightedIndex(options.indexOf(option))}
-                className={`w-full text-left px-3 py-2 text-sm ${highlightedIndex === options.indexOf(option) ? 'bg-gray-100' : 'hover:bg-gray-100'} ${option.value === value ? 'text-gray-900' : 'text-gray-700'}`}
+                className={`w-full px-3 py-2 text-left text-sm ${highlightedIndex === options.indexOf(option) ? 'bg-slate-100' : 'hover:bg-slate-50'} ${option.value === value ? 'text-slate-900' : 'text-slate-700'}`}
               >
                 {option.label}
               </button>
