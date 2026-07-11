@@ -314,38 +314,48 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, loggedUser, onLogout, onUp
         </div>
 
         {/* Direita: ícones e usuário */}
-        <div className="flex items-center gap-3 justify-end">
-          <button className="p-2 hover:bg-blue-700 rounded-lg transition">
-            <Plus size={24} />
+        <div className="flex items-center gap-2 justify-end">
+          <button className="p-2 rounded-xl border border-white/15 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition shadow-sm">
+            <Plus size={20} />
           </button>
-          <button className="p-2 hover:bg-blue-700 rounded-lg transition">
-            <Bell size={24} />
+          <button className="p-2 rounded-xl border border-white/15 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition shadow-sm">
+            <Bell size={20} />
           </button>
 
           {/* User dropdown */}
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setUserMenuOpen(v => !v)}
-              className="flex items-center gap-2 px-3 py-1 hover:bg-blue-700 rounded-lg transition"
+              className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border border-white/15 bg-white/10 backdrop-blur-sm shadow-sm hover:bg-white/20 transition"
             >
-              <div className="w-7 h-7 rounded-full bg-blue-500 border-2 border-blue-300 flex items-center justify-center text-sm font-bold">
-                {displayName.charAt(0).toUpperCase()}
+              <div className="relative">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 via-blue-500 to-indigo-600 border border-white/40 flex items-center justify-center text-sm font-bold shadow-inner">
+                  {displayName.charAt(0).toUpperCase()}
+                </div>
+                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-blue-700 bg-emerald-400" />
               </div>
               <div className="text-left hidden sm:block">
                 <p className="text-sm font-semibold leading-tight">
                   {displayName.length > 18 ? displayName.slice(0, 18) + '…' : displayName}
                 </p>
-                <p className="text-xs opacity-80 leading-tight">{perfil}</p>
+                <p className="text-[11px] opacity-80 leading-tight">{perfil}</p>
               </div>
               <ChevronDown size={14} className={`opacity-70 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-100">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{displayName}</p>
-                  <p className="text-xs text-gray-500 truncate">{displayEmail}</p>
-                  <span className="inline-flex mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+              <div className="absolute right-0 mt-2 w-60 rounded-2xl border border-slate-200 bg-white shadow-2xl z-50 overflow-hidden">
+                <div className="bg-gradient-to-r from-slate-50 to-blue-50 px-4 py-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white shadow-sm">
+                      {displayName.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 truncate">{displayName}</p>
+                      <p className="text-xs text-slate-500 truncate">{displayEmail}</p>
+                    </div>
+                  </div>
+                  <span className="inline-flex mt-2 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-700">
                     {perfil}
                   </span>
                 </div>
