@@ -1,32 +1,52 @@
 import React, { useState } from "react";
+import { Baby, Ban, Briefcase, CakeSlice, CalendarDays, Coffee, Palmtree, Stethoscope } from 'lucide-react';
 
 function getLicencaIcon(nome: string) {
-  switch (nome) {
-    case 'Férias':
-      return (
-        <span className="text-yellow-500">
-          <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#fbbf24" strokeWidth="2"/><path d="M8 16l8-8" stroke="#fbbf24" strokeWidth="2"/><path d="M16 16l-8-8" stroke="#fbbf24" strokeWidth="2"/></svg>
-        </span>
-      );
-    case 'Afastamento':
-      return (
-        <span className="text-red-500">
-          <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" stroke="#ef4444" strokeWidth="2"/><path d="M8 8l8 8M16 8l-8 8" stroke="#ef4444" strokeWidth="2"/></svg>
-        </span>
-      );
-    case 'Atestado médico':
-      return (
-        <span className="text-green-500">
-          <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" stroke="#22c55e" strokeWidth="2"/><path d="M12 8v8M8 12h8" stroke="#22c55e" strokeWidth="2"/></svg>
-        </span>
-      );
-    default:
-      return (
-        <span className="text-blue-600">
-          <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" stroke="#2563eb" strokeWidth="2"/><path d="M8 8h8v8H8z" stroke="#2563eb" strokeWidth="2"/></svg>
-        </span>
-      );
+  const normalized = (nome || '').toLowerCase();
+
+  const isAtestado = /atestado|m[ée]dico|amamenta/.test(normalized);
+  const isMaternidade = /maternidade|gestante/.test(normalized);
+  const isHappyDay = /happy day/.test(normalized);
+  const isAfastamento = /afastamento|suspens|rescis|falecimento|nojo/.test(normalized);
+  const isFerias = /férias|ferias|praia|férias coletiva|ferias coletiva/.test(normalized);
+  const isFolga = /folga|recesso|banco de horas/.test(normalized);
+  const isTrabalho = /teletrabalho|servi[çc]o|treinamento|exame|declaração|justi[çc]a|pleito|obra|quarentena/.test(normalized);
+
+  const badge = (tone: string, icon: React.ReactNode) => (
+    <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full border ${tone}`}>
+      {icon}
+    </span>
+  );
+
+  if (isAtestado) {
+    return badge('border-emerald-200 bg-emerald-50 text-emerald-600', <Stethoscope size={16} strokeWidth={2.2} />);
   }
+
+  if (isMaternidade) {
+    return badge('border-pink-200 bg-pink-50 text-pink-600', <Baby size={16} strokeWidth={2.2} />);
+  }
+
+  if (isHappyDay) {
+    return badge('border-fuchsia-200 bg-fuchsia-50 text-fuchsia-600', <CakeSlice size={16} strokeWidth={2.2} />);
+  }
+
+  if (isAfastamento) {
+    return badge('border-rose-200 bg-rose-50 text-rose-600', <Ban size={16} strokeWidth={2.2} />);
+  }
+
+  if (isFerias) {
+    return badge('border-amber-200 bg-amber-50 text-amber-600', <Palmtree size={16} strokeWidth={2.2} />);
+  }
+
+  if (isFolga) {
+    return badge('border-teal-200 bg-teal-50 text-teal-600', <Coffee size={16} strokeWidth={2.2} />);
+  }
+
+  if (isTrabalho) {
+    return badge('border-sky-200 bg-sky-50 text-sky-600', <Briefcase size={16} strokeWidth={2.2} />);
+  }
+
+  return badge('border-indigo-200 bg-indigo-50 text-indigo-600', <CalendarDays size={16} strokeWidth={2.2} />);
 }
 
 export default function LancamentoIndividualOuMassa() {
@@ -76,10 +96,8 @@ export default function LancamentoIndividualOuMassa() {
               </div>
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-purple-500">
-                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" stroke="#a78bfa" strokeWidth="2"/><path d="M8 8h8v8H8z" stroke="#a78bfa" strokeWidth="2"/></svg>
-                  </span>
-                  <span className="font-semibold">Férias</span>
+                  {getLicencaIcon(licencaSelecionada || 'Licença')}
+                  <span className="font-semibold">{licencaSelecionada || 'Licença'}</span>
                 </div>
                 <div className="flex gap-2">
                   <button className="border rounded px-3 py-1 text-xs text-gray-500">Disponível --</button>
@@ -148,9 +166,7 @@ export default function LancamentoIndividualOuMassa() {
       {licencaSelecionada && (
         <div className="flex justify-center mt-4 px-4">
           <div className="inline-flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 shadow-sm">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white shadow-sm">
-              {getLicencaIcon(licencaSelecionada)}
-            </span>
+            {getLicencaIcon(licencaSelecionada)}
             <div className="text-left">
               <span className="block text-xs font-semibold uppercase tracking-wide text-blue-600">Afastamento selecionado:</span>
               <span className="block text-sm font-bold text-gray-800">{licencaSelecionada}</span>

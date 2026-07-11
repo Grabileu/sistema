@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Search, ChevronDown, MoreVertical, Edit2, Trash2 } from 'lucide-react'
+import { Search, MoreVertical, Edit2, Trash2 } from 'lucide-react'
 import { Employee } from '../App'
 import Select from '../components/Select'
 import { formatCPF, formatPIS, formatRG, buildStoreOptions } from '../utils/formatters'
@@ -23,9 +23,31 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
     const [currentPage, setCurrentPage] = useState(1)
     const [showAdvanced, setShowAdvanced] = useState(false)
     const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+    const [isActionMenuUpward, setIsActionMenuUpward] = useState(false)
     const [headerSearchTerm, setHeaderSearchTerm] = useState<string>(() => localStorage.getItem('employeeSearchTerm') || '')
   const [pendingDelete, setPendingDelete] = useState<{ id: string; nome: string } | null>(null)
     const menuRef = useRef<HTMLDivElement>(null)
+
+    const resolveActionMenuDirection = (button: HTMLButtonElement) => {
+      const rect = button.getBoundingClientRect()
+      const estimatedMenuHeight = 120
+      const margin = 12
+      const spaceBelow = window.innerHeight - rect.bottom - margin
+      const spaceAbove = rect.top - margin
+      const wouldOverflowBottom = rect.bottom + estimatedMenuHeight + margin > window.innerHeight
+
+      setIsActionMenuUpward(wouldOverflowBottom && spaceAbove > spaceBelow)
+    }
+
+    const toggleActionMenu = (id: string, event: React.MouseEvent<HTMLButtonElement>) => {
+      if (openMenuId === id) {
+        setOpenMenuId(null)
+        return
+      }
+
+      resolveActionMenuDirection(event.currentTarget)
+      setOpenMenuId(id)
+    }
 
     // Filter state (inputs)
     const [inputFilters, setInputFilters] = useState({
@@ -71,6 +93,17 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
     const onlyNumbers = (value: string) => value.replace(/\D/g, '')
     const numericWithMaxLength = (value: string, maxLength: number) =>
       onlyNumbers(value).slice(0, maxLength)
+
+    const readStoredArray = (key: string) => {
+      const raw = localStorage.getItem(key)
+      if (!raw) return []
+      try {
+        const parsed = JSON.parse(raw)
+        return Array.isArray(parsed) ? parsed : []
+      } catch {
+        return []
+      }
+    }
 
     // Carregar equipes e departamentos do localStorage
     const [teams, setTeams] = useState(() => {
@@ -134,6 +167,12 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
 
     useEffect(() => {
       const handleStorageChange = () => {
+        setTeams(readStoredArray('teams'))
+        setDepartments(readStoredArray('departments'))
+        setPositions(readStoredArray('positions'))
+        setTurnos(readStoredArray('turnos'))
+        setBusinessUnits(readStoredArray('businessUnits'))
+
         const companyDataStr = localStorage.getItem('companyData')
         if (companyDataStr) {
           try {
@@ -150,8 +189,9 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
       }
 
       window.addEventListener('storage', handleStorageChange)
-      const handleHeaderSearchSubmit = (e: any) => {
-        setHeaderSearchTerm(e.detail || '')
+      const handleHeaderSearchSubmit = (event: Event) => {
+        const customEvent = event as CustomEvent<string>
+        setHeaderSearchTerm(customEvent.detail || '')
       }
       window.addEventListener('headerSearchSubmit', handleHeaderSearchSubmit)
       return () => {
@@ -202,6 +242,30 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
         const filterPis = onlyNumbers(appliedFilters.pis)
         const employeePis = onlyNumbers(emp.pis || '')
         if (!employeePis.includes(filterPis)) return false
+      }
+
+      if (appliedFilters.rg) {
+        const filterRg = onlyNumbers(appliedFilters.rg)
+        const employeeRg = onlyNumbers(emp.rg || '')
+        if (!employeeRg.includes(filterRg)) return false
+      }
+
+      if (appliedFilters.cidade) {
+        const filterCidade = appliedFilters.cidade.trim().toLowerCase()
+        const employeeCidade = (emp.cidade || '').trim().toLowerCase()
+        if (!employeeCidade.includes(filterCidade)) return false
+      }
+
+      if (appliedFilters.carteira) {
+        const filterCarteira = onlyNumbers(appliedFilters.carteira)
+        const employeeCarteira = onlyNumbers(emp.carteiraTrabalho || '')
+        if (!employeeCarteira.includes(filterCarteira)) return false
+      }
+
+      if (appliedFilters.cnh) {
+        const filterCnh = onlyNumbers(appliedFilters.cnh)
+        const employeeCnh = onlyNumbers(emp.cnh || '')
+        if (!employeeCnh.includes(filterCnh)) return false
       }
 
       if (appliedFilters.matricula && !emp.matricula.includes(appliedFilters.matricula)) return false;
@@ -447,6 +511,8 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
                   <input
                     type="text"
                     placeholder="Digite"
+                    value={inputFilters.cidade}
+                    onChange={(e) => setInputFilters({...inputFilters, cidade: e.target.value})}
                     className="mt-1 w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-100"
                   />
                 </div>
@@ -503,7 +569,7 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
           <div className="flex items-center justify-end text-sm text-gray-500 mb-3">
             Página {currentPage}/{totalPages} - Exibindo {filteredEmployees.length === 0 ? 0 : startIndex + 1} a {endIndex} de {filteredEmployees.length} registros.
           </div>
-          <div className="overflow-x-auto" style={{ overflow: 'visible' }}>
+          <div className="overflow-x-auto overflow-y-visible">
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="text-left text-gray-500 border-b">
@@ -544,13 +610,13 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
                       <td className="py-4 text-right">
                         <div className="relative inline-block" ref={openMenuId === employee.id ? menuRef : null}>
                           <button
-                            onClick={() => setOpenMenuId(openMenuId === employee.id ? null : employee.id)}
+                            onClick={(event) => toggleActionMenu(employee.id, event)}
                             className="p-2 hover:bg-gray-100 rounded"
                           >
                             <MoreVertical size={16} className="text-gray-400" />
                           </button>
                           {openMenuId === employee.id && (
-                            <div className="absolute right-0 mt-1 w-44 bg-white rounded-md shadow-xl border border-gray-200 py-1"
+                            <div className={`absolute right-0 w-44 max-h-[min(16rem,calc(100vh-2rem))] overflow-y-auto overscroll-contain rounded-md border border-gray-200 bg-white py-1 shadow-xl ${isActionMenuUpward ? 'bottom-full mb-1' : 'top-full mt-1'}`}
                                  style={{ zIndex: 9999 }}>
                               <button
                                 onClick={() => handleEdit(employee.id)}

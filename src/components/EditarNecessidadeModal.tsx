@@ -27,8 +27,9 @@ const EditarNecessidadeModal: React.FC<EditarNecessidadeModalProps> = ({ open, v
       submitButtonText="Salvar alterações"
     >
       <form onSubmit={e => { e.preventDefault(); onSubmit(); }}>
-          <div className="mb-6">
-            <span className="text-indigo-700 font-bold text-lg">Necessidades especiais</span>
+          <div className="mb-6 border-b border-slate-100 pb-3">
+            <h3 className="text-base font-semibold text-slate-900">Necessidades especiais</h3>
+            <p className="mt-1 text-xs text-slate-500">Registre necessidades e observações de acessibilidade.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             <div>

@@ -4,6 +4,7 @@ import EditarContatoModal from '../components/EditarContatoModal';
 import EditarContatoEmergenciaModal from '../components/EditarContatoEmergenciaModal';
 
 import React, { useEffect, useState } from 'react';
+import { Printer } from 'lucide-react';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import { useEditModal } from '../hooks/useEditModal';
 import EditarPeriodoExperienciaModal from '../components/EditarPeriodoExperienciaModal';
@@ -439,19 +440,43 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
   ];
 
   const getDetailTabButtonClass = (tab: PerfilTab) =>
-    `text-sm ${abaAtiva === tab ? 'font-bold text-indigo-700 border-b-2 border-indigo-700 px-2 pb-1' : 'text-gray-600'}`;
+    `px-2 py-2 text-sm font-medium border-b-2 transition-colors duration-150 ${
+      abaAtiva === tab
+        ? 'text-indigo-700 border-indigo-600'
+        : 'text-gray-500 border-transparent hover:text-indigo-700'
+    }`;
 
   const renderDetailTabButtons = () => (
-    <div className="flex justify-between gap-2 border-b border-gray-200 mb-4">
-      {detailTabs.map(({ key, label }) => (
+    <div className="mb-4 border-b border-gray-200">
+      <div className="flex items-end justify-between gap-4">
         <button
-          key={key}
-          className={getDetailTabButtonClass(key)}
-          onClick={() => setAbaAtiva(key)}
+          key={detailTabs[0].key}
+          className={`${getDetailTabButtonClass(detailTabs[0].key)} text-left`}
+          onClick={() => setAbaAtiva(detailTabs[0].key)}
         >
-          {label}
+          {detailTabs[0].label}
         </button>
-      ))}
+
+        <div className="grid grid-cols-2 gap-4">
+          {detailTabs.slice(1, 3).map(({ key, label }) => (
+            <button
+              key={key}
+              className={`${getDetailTabButtonClass(key)} min-w-[220px] text-center`}
+              onClick={() => setAbaAtiva(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <button
+          key={detailTabs[3].key}
+          className={`${getDetailTabButtonClass(detailTabs[3].key)} text-right`}
+          onClick={() => setAbaAtiva(detailTabs[3].key)}
+        >
+          {detailTabs[3].label}
+        </button>
+      </div>
     </div>
   );
 
@@ -536,10 +561,13 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
         <div className="md:col-span-2 flex flex-col gap-6">
           <div className="bg-white rounded-xl shadow-lg p-5 border border-gray-100 flex flex-col md:flex-row gap-6 items-start w-full">
             <div className="flex-1">
-              <div className="font-bold text-base text-gray-900 mb-3">Ações rápidas</div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              <div className="mb-3">
+                <div className="font-semibold text-sm text-gray-900">Ações rápidas</div>
+                <p className="text-xs text-gray-500 mt-0.5">Atalhos para ações frequentes do colaborador.</p>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <button
-                  className="border border-indigo-600 text-indigo-700 font-medium rounded px-3 py-1.5 flex items-center gap-2 hover:bg-indigo-50 transition-all text-xs"
+                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:border-slate-300"
                   onClick={() => {
                     if (funcionario && funcionario.id) {
                       localStorage.setItem('editingEmployeeId', funcionario.id);
@@ -556,22 +584,19 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
                   </svg>
                   Editar cadastro
                 </button>
-                <button className="border border-indigo-600 text-indigo-700 font-medium rounded px-3 py-1.5 flex items-center gap-2 hover:bg-indigo-50 transition-all text-xs">
+                <button className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:border-slate-300">
                   {/* Relógio (Heroicons outline) */}
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
                   </svg>
                   Alterar turno/equipe
                 </button>
-                <button className="border border-indigo-600 text-indigo-700 font-medium rounded px-3 py-1.5 flex items-center gap-2 hover:bg-indigo-50 transition-all text-xs">
-                  {/* Impressora (Heroicons outline) */}
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 17v4H7v-4m10 0V7a2 2 0 00-2-2H9a2 2 0 00-2 2v10m10 0H7m10 0a2 2 0 002-2v-4a2 2 0 00-2-2H7a2 2 0 00-2 2v4a2 2 0 002 2h10z" />
-                  </svg>
+                <button className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:border-slate-300">
+                  <Printer size={16} />
                   Baixar ficha do funcionário
                 </button>
                 <button
-                  className="border border-red-500 text-red-600 font-medium rounded px-3 py-1.5 flex items-center gap-2 hover:bg-red-50 transition-all text-xs"
+                  className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 hover:border-red-300"
                   onClick={() => setShowDismissModal(true)}
                 >
                         {/* Modal de confirmação de demissão */}
@@ -782,7 +807,7 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
                     cargo: funcionarioView?.cargo || '',
                     equipe: funcionarioView?.equipe || '',
                     turno: funcionarioView?.turno || '',
-                    departamento: funcionarioView?.departamento || '',
+                    departamento: departamento !== '-' ? departamento : (funcionarioView?.departamento || ''),
                     unidadeNegocio: funcionarioView?.loja || '',
                     primeiroEmprego: funcionarioView?.primeiroEmprego || 'não',
                     cargoConfianca: funcionarioView?.cargoConfianca || 'não',

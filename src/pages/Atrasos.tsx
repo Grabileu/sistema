@@ -41,6 +41,7 @@ const Atrasos: React.FC<AtrasosProps> = ({ employees, atrasos, onNavigate, onDel
     return null
   })
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [isActionMenuUpward, setIsActionMenuUpward] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ id: string; funcionarioNome: string } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -72,6 +73,27 @@ const Atrasos: React.FC<AtrasosProps> = ({ employees, atrasos, onNavigate, onDel
   })
 
   useClickOutside(menuRef, () => setOpenMenuId(null))
+
+  const resolveActionMenuDirection = (button: HTMLButtonElement) => {
+    const rect = button.getBoundingClientRect()
+    const estimatedMenuHeight = 120
+    const margin = 12
+    const spaceBelow = window.innerHeight - rect.bottom - margin
+    const spaceAbove = rect.top - margin
+    const wouldOverflowBottom = rect.bottom + estimatedMenuHeight + margin > window.innerHeight
+
+    setIsActionMenuUpward(wouldOverflowBottom && spaceAbove > spaceBelow)
+  }
+
+  const toggleActionMenu = (id: string, event: React.MouseEvent<HTMLButtonElement>) => {
+    if (openMenuId === id) {
+      setOpenMenuId(null)
+      return
+    }
+
+    resolveActionMenuDirection(event.currentTarget)
+    setOpenMenuId(id)
+  }
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -160,7 +182,8 @@ const Atrasos: React.FC<AtrasosProps> = ({ employees, atrasos, onNavigate, onDel
 
   const handleDataInicioChange = (value: string) => {
     setInputDataInicio(value)
-    if (value && dataFimRef.current) {
+    const isCompleteDate = /^\d{2}\/\d{2}\/\d{4}$/.test(value)
+    if (isCompleteDate && dataFimRef.current) {
       setTimeout(() => {
         dataFimRef.current?.focus()
         setAutoOpenDataFim(true)
@@ -406,13 +429,13 @@ const Atrasos: React.FC<AtrasosProps> = ({ employees, atrasos, onNavigate, onDel
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="relative inline-block text-left" ref={menuRef}>
                           <button
-                            onClick={() => setOpenMenuId(openMenuId === atraso.id ? null : atraso.id)}
+                            onClick={(event) => toggleActionMenu(atraso.id, event)}
                             className="text-gray-500 hover:text-gray-700 focus:outline-none"
                           >
                             <MoreVertical size={16} />
                           </button>
                           {openMenuId === atraso.id && (
-                            <div className="origin-top-right absolute right-0 mt-2 w-32 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                            <div className={`absolute right-0 w-32 max-h-[min(16rem,calc(100vh-2rem))] overflow-y-auto overscroll-contain rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 z-10 ${isActionMenuUpward ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
                               <div className="py-1">
                                 <button
                                   onClick={() => handleEdit(atraso.id)}

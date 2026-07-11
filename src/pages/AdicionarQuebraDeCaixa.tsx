@@ -1,21 +1,45 @@
 import React, { useState } from 'react'
-import { Employee } from '../App'
+import { Employee, QuebraDeCaixa } from '../App'
 import DatePicker from '../components/DatePicker'
 import Select from '../components/Select'
 import { buildEmployeeOptions } from '../utils/formatters'
 
+type QuebraPayload = QuebraDeCaixa & {
+  valor?: string
+  tipo?: string
+  comprovantes?: string
+  desconto?: number
+  observacao?: string
+}
+
+type QuebraFormData = {
+  funcionarioId: string
+  data: string
+  formaPagamento: string
+  valor: string
+  tipo: string
+  comprovantes: string
+  desconto: number
+  observacao: string
+}
+
+type QuebraFormErrors = {
+  funcionarioId: boolean
+  data: boolean
+}
+
 interface AdicionarQuebraProps {
   onNavigate?: (route: string) => void
-  onAddQuebra?: (quebra: any) => void
-  onUpdateQuebra?: (quebra: any) => void
+  onAddQuebra?: (quebra: QuebraPayload) => void
+  onUpdateQuebra?: (quebra: QuebraPayload) => void
   employees: Employee[]
-  editingQuebra?: any
+  editingQuebra?: QuebraPayload | null
 }
 
 const AdicionarQuebraDeCaixa: React.FC<AdicionarQuebraProps> = ({ onNavigate, onAddQuebra, onUpdateQuebra, employees, editingQuebra }) => {
   const standardFieldClass = 'rounded-md text-sm focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-100'
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<QuebraFormData>({
     funcionarioId: editingQuebra?.funcionarioId || '',
     data: editingQuebra?.data || '',
     formaPagamento: editingQuebra?.formaPagamento || '',
@@ -26,7 +50,7 @@ const AdicionarQuebraDeCaixa: React.FC<AdicionarQuebraProps> = ({ onNavigate, on
     observacao: editingQuebra?.observacao || ''
   })
 
-  const [errors, setErrors] = useState({
+  const [errors, setErrors] = useState<QuebraFormErrors>({
     funcionarioId: false,
     data: false
   })
@@ -59,35 +83,29 @@ const AdicionarQuebraDeCaixa: React.FC<AdicionarQuebraProps> = ({ onNavigate, on
 
     const selectedEmployee = employees.find((e) => e.id === formData.funcionarioId)
 
+    const basePayload: Omit<QuebraPayload, 'id' | 'criadoEm'> = {
+      funcionarioId: formData.funcionarioId,
+      funcionarioNome: selectedEmployee?.nomeCompleto || '',
+      data: formData.data,
+      formaPagamento: formData.formaPagamento,
+      valor: formData.formaPagamento === 'Dinheiro' ? formData.valor : undefined,
+      tipo: formData.formaPagamento === 'Dinheiro' ? formData.tipo : undefined,
+      comprovantes: formData.formaPagamento !== 'Dinheiro' ? formData.comprovantes : undefined,
+      desconto: formData.formaPagamento !== 'Dinheiro' ? formData.desconto : undefined,
+      observacao: formData.formaPagamento !== 'Dinheiro' ? formData.observacao : ''
+    }
+
     if (editingQuebra) {
-      const updated = {
+      onUpdateQuebra?.({
         ...editingQuebra,
-        funcionarioId: formData.funcionarioId,
-        funcionarioNome: selectedEmployee?.nomeCompleto || '',
-        data: formData.data,
-        formaPagamento: formData.formaPagamento,
-        valor: formData.formaPagamento === 'Dinheiro' ? formData.valor : undefined,
-        tipo: formData.formaPagamento === 'Dinheiro' ? formData.tipo : undefined,
-        comprovantes: formData.formaPagamento !== 'Dinheiro' ? formData.comprovantes : undefined,
-        desconto: formData.formaPagamento !== 'Dinheiro' ? formData.desconto : undefined,
-        observacao: formData.formaPagamento !== 'Dinheiro' ? formData.observacao : ''
-      }
-      onUpdateQuebra?.(updated)
+        ...basePayload
+      })
     } else {
-      const newQuebra = {
+      onAddQuebra?.({
         id: Date.now().toString(),
-        funcionarioId: formData.funcionarioId,
-        funcionarioNome: selectedEmployee?.nomeCompleto || '',
-        data: formData.data,
-        formaPagamento: formData.formaPagamento,
-        valor: formData.formaPagamento === 'Dinheiro' ? formData.valor : undefined,
-        tipo: formData.formaPagamento === 'Dinheiro' ? formData.tipo : undefined,
-        comprovantes: formData.formaPagamento !== 'Dinheiro' ? formData.comprovantes : undefined,
-        desconto: formData.formaPagamento !== 'Dinheiro' ? formData.desconto : undefined,
-        observacao: formData.formaPagamento !== 'Dinheiro' ? formData.observacao : '',
-        criadoEm: new Date().toLocaleDateString('pt-BR')
-      }
-      onAddQuebra?.(newQuebra)
+        criadoEm: new Date().toLocaleDateString('pt-BR'),
+        ...basePayload
+      })
     }
     onNavigate?.('quebra-de-caixa')
   }
@@ -112,8 +130,8 @@ const AdicionarQuebraDeCaixa: React.FC<AdicionarQuebraProps> = ({ onNavigate, on
               <Select
                 value={formData.funcionarioId}
                 onChange={(value) => {
-                  setFormData({ ...formData, funcionarioId: String(value) })
-                  setErrors({ ...errors, funcionarioId: false })
+                  setFormData((prev) => ({ ...prev, funcionarioId: String(value) }))
+                  setErrors((prev) => ({ ...prev, funcionarioId: false }))
                 }}
                 options={employeeOptions}
                 buttonClassName={standardFieldClass}
@@ -130,8 +148,8 @@ const AdicionarQuebraDeCaixa: React.FC<AdicionarQuebraProps> = ({ onNavigate, on
               <DatePicker
                 value={formData.data}
                 onChange={(value) => {
-                  setFormData({ ...formData, data: value })
-                  setErrors({ ...errors, data: false })
+                  setFormData((prev) => ({ ...prev, data: value }))
+                  setErrors((prev) => ({ ...prev, data: false }))
                 }}
                 className={standardFieldClass}
               />
@@ -145,9 +163,18 @@ const AdicionarQuebraDeCaixa: React.FC<AdicionarQuebraProps> = ({ onNavigate, on
             <label className="block text-gray-700 text-sm mb-2">Forma de pagamento</label>
             <Select
               value={formData.formaPagamento}
-              onChange={(value) =>
-                setFormData({ ...formData, formaPagamento: String(value) })
-              }
+              onChange={(value) => {
+                const formaPagamento = String(value)
+                setFormData((prev) => ({
+                  ...prev,
+                  formaPagamento,
+                  valor: formaPagamento === 'Dinheiro' ? prev.valor : '',
+                  tipo: formaPagamento === 'Dinheiro' ? prev.tipo : '',
+                  comprovantes: formaPagamento !== 'Dinheiro' ? prev.comprovantes : '',
+                  desconto: formaPagamento !== 'Dinheiro' ? prev.desconto : 0,
+                  observacao: formaPagamento !== 'Dinheiro' ? prev.observacao : ''
+                }))
+              }}
               options={pagamentos}
               buttonClassName={standardFieldClass}
             />
@@ -162,7 +189,7 @@ const AdicionarQuebraDeCaixa: React.FC<AdicionarQuebraProps> = ({ onNavigate, on
                   inputMode="decimal"
                   step="0.01"
                   value={formData.valor}
-                  onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, valor: e.target.value }))}
                   onWheel={(e) => e.currentTarget.blur()}
                   className={`w-full bg-gray-100 border border-gray-200 px-3 py-2 ${standardFieldClass}`}
                 />
@@ -176,7 +203,7 @@ const AdicionarQuebraDeCaixa: React.FC<AdicionarQuebraProps> = ({ onNavigate, on
                       name="tipo"
                       value="sobrou"
                       checked={formData.tipo === 'sobrou'}
-                      onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, tipo: e.target.value }))}
                       className="form-radio text-indigo-600"
                     />
                     Sobrou
@@ -187,7 +214,7 @@ const AdicionarQuebraDeCaixa: React.FC<AdicionarQuebraProps> = ({ onNavigate, on
                       name="tipo"
                       value="faltou"
                       checked={formData.tipo === 'faltou'}
-                      onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, tipo: e.target.value }))}
                       className="form-radio text-indigo-600"
                     />
                     Faltou
@@ -207,11 +234,11 @@ const AdicionarQuebraDeCaixa: React.FC<AdicionarQuebraProps> = ({ onNavigate, on
                   value={formData.comprovantes}
                   onChange={(e) => {
                     // valor do comprovante não altera desconto fixo
-                    setFormData({
-                      ...formData,
+                    setFormData((prev) => ({
+                      ...prev,
                       comprovantes: e.target.value,
                       desconto: 5
-                    })
+                    }))
                   }}
                   onWheel={(e) => e.currentTarget.blur()}
                   className={`w-full bg-gray-100 border border-gray-200 px-3 py-2 ${standardFieldClass}`}
@@ -231,7 +258,7 @@ const AdicionarQuebraDeCaixa: React.FC<AdicionarQuebraProps> = ({ onNavigate, on
                 <label className="block text-gray-700 text-sm mb-2">Observação</label>
                 <textarea
                   value={formData.observacao}
-                  onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, observacao: e.target.value }))}
                   className={`w-full bg-gray-100 border border-gray-200 px-3 py-2 resize-none ${standardFieldClass}`}
                 />
               </div>

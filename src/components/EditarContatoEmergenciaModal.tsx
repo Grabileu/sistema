@@ -41,7 +41,10 @@ const EditarContatoEmergenciaModal: React.FC<EditarContatoEmergenciaModalProps> 
       onSubmit={onSubmit}
       submitButtonText="Salvar alterações"
     >
-      <div className="text-indigo-700 font-bold text-base mb-2 cursor-pointer">Contatos de emergência</div>
+      <div className="mb-4 border-b border-slate-100 pb-3">
+        <h3 className="text-base font-semibold text-slate-900">Contatos de emergência</h3>
+        <p className="mt-1 text-xs text-slate-500">Cadastre quem deve ser acionado em situações urgentes.</p>
+      </div>
       <form
         onSubmit={e => {
           e.preventDefault();

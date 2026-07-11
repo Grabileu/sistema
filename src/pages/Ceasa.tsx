@@ -176,6 +176,7 @@ const Ceasa: React.FC<CeasaProps> = ({ onNavigate, businessUnits = [] }) => {
   })
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [isActionMenuUpward, setIsActionMenuUpward] = useState(false)
   const [openSupplierMenuId, setOpenSupplierMenuId] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<{ id: string; produto: string } | null>(null)
   const [pendingSupplierDelete, setPendingSupplierDelete] = useState<{ id: string; nome: string } | null>(null)
@@ -222,6 +223,27 @@ const Ceasa: React.FC<CeasaProps> = ({ onNavigate, businessUnits = [] }) => {
   }, [compras])
 
   useClickOutside(menuRef, () => { setOpenMenuId(null); setOpenSupplierMenuId(null) })
+
+  const resolveActionMenuDirection = (button: HTMLButtonElement) => {
+    const rect = button.getBoundingClientRect()
+    const estimatedMenuHeight = 96
+    const margin = 12
+    const spaceBelow = window.innerHeight - rect.bottom - margin
+    const spaceAbove = rect.top - margin
+    const wouldOverflowBottom = rect.bottom + estimatedMenuHeight + margin > window.innerHeight
+
+    setIsActionMenuUpward(wouldOverflowBottom && spaceAbove > spaceBelow)
+  }
+
+  const toggleActionMenu = (id: string, event: React.MouseEvent<HTMLButtonElement>) => {
+    if (openMenuId === id) {
+      setOpenMenuId(null)
+      return
+    }
+
+    resolveActionMenuDirection(event.currentTarget)
+    setOpenMenuId(id)
+  }
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -411,7 +433,8 @@ const Ceasa: React.FC<CeasaProps> = ({ onNavigate, businessUnits = [] }) => {
 
   const handleDataInicioChange = (value: string) => {
     setInputDataInicio(value)
-    if (value && dataFimRef.current) {
+    const isCompleteDate = /^\d{2}\/\d{2}\/\d{4}$/.test(value)
+    if (isCompleteDate && dataFimRef.current) {
       setTimeout(() => {
         dataFimRef.current?.focus()
         setAutoOpenDataFim(true)
@@ -810,7 +833,7 @@ const Ceasa: React.FC<CeasaProps> = ({ onNavigate, businessUnits = [] }) => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium relative">
                             <button
-                              onClick={() => setOpenMenuId(openMenuId === compra.id ? null : compra.id)}
+                              onClick={(event) => toggleActionMenu(compra.id, event)}
                               className="text-gray-400 hover:text-gray-600"
                             >
                               <MoreVertical size={18} />
@@ -818,7 +841,7 @@ const Ceasa: React.FC<CeasaProps> = ({ onNavigate, businessUnits = [] }) => {
                             {openMenuId === compra.id && (
                               <div
                                 ref={menuRef}
-                                className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-10"
+                                className={`absolute right-0 w-40 max-h-[min(16rem,calc(100vh-2rem))] overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white shadow-lg z-10 ${isActionMenuUpward ? 'bottom-full mb-2' : 'top-full mt-2'}`}
                               >
                                 <button
                                   onClick={() => handleDelete(compra.id, compra.produto)}

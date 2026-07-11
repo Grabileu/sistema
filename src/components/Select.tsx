@@ -35,8 +35,29 @@ const Select: React.FC<SelectProps> = ({
   const [open, setOpen] = useState(false)
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const [search, setSearch] = useState('')
+  const [openUpward, setOpenUpward] = useState(false)
+  const [menuMaxHeight, setMenuMaxHeight] = useState(256)
   const containerRef = useRef<HTMLDivElement>(null)
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null)
+
+  const updateMenuViewportPosition = () => {
+    const anchor = triggerButtonRef.current
+    if (!anchor) return
+
+    const rect = anchor.getBoundingClientRect()
+    const viewportHeight = window.innerHeight
+    const margin = 8
+    const preferredHeight = 256
+
+    const spaceBelow = viewportHeight - rect.bottom - margin
+    const spaceAbove = rect.top - margin
+    const shouldOpenUpward = spaceBelow < preferredHeight && spaceAbove > spaceBelow
+    const availableSpace = shouldOpenUpward ? spaceAbove : spaceBelow
+    const safeMaxHeight = Math.max(120, Math.min(320, Math.floor(availableSpace)))
+
+    setOpenUpward(shouldOpenUpward)
+    setMenuMaxHeight(safeMaxHeight)
+  }
 
   const selectedIndex = options.findIndex((option) => option.value === value)
 
@@ -68,6 +89,20 @@ const Select: React.FC<SelectProps> = ({
 
     setHighlightedIndex(options.length > 0 ? 0 : -1)
   }, [open, selectedIndex, options.length])
+
+  useEffect(() => {
+    if (!open) return
+
+    updateMenuViewportPosition()
+
+    window.addEventListener('resize', updateMenuViewportPosition)
+    window.addEventListener('scroll', updateMenuViewportPosition, true)
+
+    return () => {
+      window.removeEventListener('resize', updateMenuViewportPosition)
+      window.removeEventListener('scroll', updateMenuViewportPosition, true)
+    }
+  }, [open])
 
   const focusNext = () => {
     if (nextRef?.current) {
@@ -185,7 +220,10 @@ const Select: React.FC<SelectProps> = ({
       </button>
 
       {open && (
-        <div className={`absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 max-h-64 overflow-auto ${menuClassName}`}>
+        <div
+          className={`absolute left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg z-20 overflow-auto ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'} ${menuClassName}`}
+          style={{ maxHeight: `${menuMaxHeight}px` }}
+        >
           {showSearchBar && options.length > 15 && (
             <div className="sticky top-0 z-10 border-b border-slate-100 bg-white p-2">
               <input

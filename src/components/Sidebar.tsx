@@ -335,7 +335,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate, canAcces
                 placeholder="Pesquisar no menu"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg bg-[#2a2a3e] text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-1 focus:ring-gray-600"
+                className="w-full px-4 py-2.5 rounded-lg !border !border-[#3a4b79] !bg-[#233663] !text-white placeholder:!text-blue-200/75 text-sm focus:!outline-none focus:!bg-[#2b4279] focus:!border-[#5c7fcf] focus:!ring-2 focus:!ring-blue-300/30"
               />
               <Search size={18} className="absolute text-gray-400 transform -translate-y-1/2 right-3 top-1/2" />
             </div>

@@ -93,7 +93,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <Sparkles size={14} />
             Acesso
           </div>
-          <h1 className="mt-5 text-3xl font-bold tracking-tight">GUF Sistemas</h1>
+          <h1 className="mt-5 text-3xl font-bold tracking-tight">PontoG</h1>
           <p className="mt-1 text-blue-100 text-sm">Mais clareza no dia</p>
         </div>
 
@@ -147,7 +147,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </div>
 
         <div className="relative z-10 text-blue-200/80 text-xs">
-          © {new Date().getFullYear()} GUF Sistemas. Todos os direitos reservados.
+          © {new Date().getFullYear()} PontoG. Todos os direitos reservados.
         </div>
       </div>
 
@@ -156,7 +156,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <div className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white/90 px-7 py-8 shadow-[0_25px_80px_rgba(15,23,42,0.10)] backdrop-blur-sm">
           {/* Mobile logo */}
           <div className="lg:hidden mb-8 text-center">
-            <h1 className="text-2xl font-bold text-blue-700">GUF Sistemas</h1>
+            <h1 className="text-2xl font-bold text-blue-700">PontoG</h1>
             <p className="text-gray-500 text-sm">Acesso rápido</p>
           </div>
 

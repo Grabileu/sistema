@@ -65,7 +65,10 @@ const EditarEnderecoModal: React.FC<EditarEnderecoModalProps> = ({ open, values,
       onSubmit={handleSubmit}
       submitButtonText="Salvar alterações"
     >
-      <h3 className="text-lg font-bold text-indigo-700 mb-4">Endereço</h3>
+      <div className="mb-4 border-b border-slate-100 pb-3">
+        <h3 className="text-base font-semibold text-slate-900">Endereço</h3>
+        <p className="mt-1 text-xs text-slate-500">Atualize os dados de localização e residência.</p>
+      </div>
       <form
         onSubmit={e => {
           e.preventDefault();

@@ -25,6 +25,7 @@ interface TeamsProps {
 const Teams: React.FC<TeamsProps> = ({ onNavigate, teams, employees, onViewTeam, onEditTeam, onDeleteTeam, initialTab }) => {
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [isActionMenuUpward, setIsActionMenuUpward] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ id: string; nome: string } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<'gerenciar' | 'gestores'>(initialTab || 'gerenciar');
@@ -37,6 +38,27 @@ const Teams: React.FC<TeamsProps> = ({ onNavigate, teams, employees, onViewTeam,
   }, [initialTab])
 
   useClickOutside(menuRef, () => setOpenMenuId(null))
+
+  const resolveActionMenuDirection = (button: HTMLButtonElement) => {
+    const rect = button.getBoundingClientRect()
+    const estimatedMenuHeight = 160
+    const margin = 12
+    const spaceBelow = window.innerHeight - rect.bottom - margin
+    const spaceAbove = rect.top - margin
+    const wouldOverflowBottom = rect.bottom + estimatedMenuHeight + margin > window.innerHeight
+
+    setIsActionMenuUpward(wouldOverflowBottom && spaceAbove > spaceBelow)
+  }
+
+  const toggleActionMenu = (id: string, event: React.MouseEvent<HTMLButtonElement>) => {
+    if (openMenuId === id) {
+      setOpenMenuId(null)
+      return
+    }
+
+    resolveActionMenuDirection(event.currentTarget)
+    setOpenMenuId(id)
+  }
 
   const handleDelete = (id: string, nome: string) => {
     setPendingDelete({ id, nome })
@@ -149,13 +171,13 @@ const Teams: React.FC<TeamsProps> = ({ onNavigate, teams, employees, onViewTeam,
                         <td className="px-6 py-4 text-right">
                           <div className="relative inline-block" ref={openMenuId === team.id ? menuRef : null}>
                             <button
-                              onClick={() => setOpenMenuId(openMenuId === team.id ? null : team.id)}
+                              onClick={(event) => toggleActionMenu(team.id, event)}
                               className="rounded-lg p-1.5 transition hover:bg-slate-100"
                             >
                               <MoreVertical size={16} className="text-slate-500" />
                             </button>
                             {openMenuId === team.id && (
-                              <div className="absolute right-0 z-[9999] mt-1 w-48 rounded-xl border border-slate-200 bg-white py-1 shadow-xl">
+                              <div className={`absolute right-0 z-[9999] w-48 max-h-[min(16rem,calc(100vh-2rem))] overflow-y-auto overscroll-contain rounded-xl border border-slate-200 bg-white py-1 shadow-xl ${isActionMenuUpward ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
                                 <button
                                   onClick={() => handleView(team.id)}
                                   className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-slate-100"

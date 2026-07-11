@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { formatDate } from '../utils/formatters'
+import Select from './Select'
 
 interface DatePickerProps {
   value: string
@@ -32,9 +33,68 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [yearInput, setYearInput] = useState(new Date().getFullYear().toString())
+  const [openUpward, setOpenUpward] = useState(false)
+  const [resolvedAlign, setResolvedAlign] = useState<'left' | 'right'>(calendarAlign)
   const calendarRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const hasHandledInitialAutoOpen = useRef(false)
+
+  const updateCalendarViewportPosition = () => {
+    const anchor = inputRef.current
+    if (!anchor) return
+
+    const rect = anchor.getBoundingClientRect()
+    const viewportHeight = window.innerHeight
+    const viewportWidth = window.innerWidth
+    const margin = 8
+    const estimatedCalendarWidth = 300
+
+    const spaceBelow = viewportHeight - rect.bottom - margin
+    const spaceAbove = rect.top - margin
+    const shouldOpenUpward = spaceBelow < 320 && spaceAbove > spaceBelow
+
+    setOpenUpward(shouldOpenUpward)
+
+    const overflowsRight = rect.left + estimatedCalendarWidth > viewportWidth - margin
+    const overflowsLeft = rect.right - estimatedCalendarWidth < margin
+
+    if (calendarAlign === 'left' && overflowsRight) {
+      setResolvedAlign('right')
+      return
+    }
+
+    if (calendarAlign === 'right' && overflowsLeft) {
+      setResolvedAlign('left')
+      return
+    }
+
+    setResolvedAlign(calendarAlign)
+  }
+
+  const parseDateFromString = (rawValue: string): Date | null => {
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(rawValue)) return null
+
+    const [dayStr, monthStr, yearStr] = rawValue.split('/')
+    const day = parseInt(dayStr, 10)
+    const month = parseInt(monthStr, 10)
+    const year = parseInt(yearStr, 10)
+
+    if (!day || !month || !year) return null
+
+    const parsed = new Date(year, month - 1, day)
+    const isSameDate =
+      parsed.getFullYear() === year &&
+      parsed.getMonth() === month - 1 &&
+      parsed.getDate() === day
+
+    return isSameDate ? parsed : null
+  }
+
+  const syncCalendarStateFromDate = (date: Date) => {
+    setSelectedDate(date)
+    setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1))
+    setYearInput(String(date.getFullYear()))
+  }
 
   const setInputRefs = (node: HTMLInputElement | null) => {
     inputRef.current = node
@@ -89,39 +149,39 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(({
       return
     }
 
-    if (value && value.length === 10) {
-      const [day, month, year] = value.split('/')
-      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
-      if (!isNaN(date.getTime())) {
-        setSelectedDate(date)
-        setCurrentMonth(new Date(parseInt(year), parseInt(month) - 1))
-        setYearInput(year)
-      }
-    }
+    const parsed = parseDateFromString(value.trim())
+    if (parsed) syncCalendarStateFromDate(parsed)
   }, [value])
 
+  useEffect(() => {
+    if (!showCalendar) return
+
+    updateCalendarViewportPosition()
+
+    window.addEventListener('resize', updateCalendarViewportPosition)
+    window.addEventListener('scroll', updateCalendarViewportPosition, true)
+
+    return () => {
+      window.removeEventListener('resize', updateCalendarViewportPosition)
+      window.removeEventListener('scroll', updateCalendarViewportPosition, true)
+    }
+  }, [showCalendar, calendarAlign])
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
+    let value = e.target.value
     // Só formata se não estiver no padrão DD/MM/AAAA
     if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
-      value = formatDate(value);
+      value = formatDate(value)
     }
-    onChange(value);
+    onChange(value)
 
     // Atualiza o calendário conforme digita
-    if (value.length === 10) {
-      const [day, month, year] = value.split('/')
-      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
-      if (!isNaN(date.getTime())) {
-        setSelectedDate(date)
-        setCurrentMonth(new Date(parseInt(year), parseInt(month) - 1))
-        setYearInput(year)
-      }
-    }
+    const parsed = parseDateFromString(value)
+    if (parsed) syncCalendarStateFromDate(parsed)
   }
 
   const handleDateSelect = (date: Date) => {
-    setSelectedDate(date)
+    syncCalendarStateFromDate(date)
     const day = String(date.getDate()).padStart(2, '0')
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const year = date.getFullYear()
@@ -178,7 +238,7 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(({
     if (value.length <= 4) {
       setYearInput(value)
       if (value.length === 4) {
-        setCurrentMonth(new Date(parseInt(value), currentMonth.getMonth()))
+        setCurrentMonth(new Date(parseInt(value, 10), currentMonth.getMonth()))
       }
     }
   }
@@ -201,6 +261,21 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(({
     focusNext(event.currentTarget)
   }
 
+  const monthOptions = [
+    { label: 'Janeiro', value: 0 },
+    { label: 'Fevereiro', value: 1 },
+    { label: 'Março', value: 2 },
+    { label: 'Abril', value: 3 },
+    { label: 'Maio', value: 4 },
+    { label: 'Junho', value: 5 },
+    { label: 'Julho', value: 6 },
+    { label: 'Agosto', value: 7 },
+    { label: 'Setembro', value: 8 },
+    { label: 'Outubro', value: 9 },
+    { label: 'Novembro', value: 10 },
+    { label: 'Dezembro', value: 11 }
+  ]
+
   return (
     <div className="relative inline-block w-full" ref={calendarRef}>
       <input
@@ -220,7 +295,7 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(({
         onClick={(e) => {
           e.stopPropagation()
           if (!disabled) {
-            setShowCalendar(!showCalendar)
+            setShowCalendar((previous) => !previous)
           }
         }}
         disabled={disabled}
@@ -234,8 +309,13 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(({
       {/* Calendário */}
       {showCalendar && (
         <div
-          className={`absolute top-full mt-2 z-50 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl ${calendarAlign === 'right' ? 'right-0' : 'left-0'}`}
-          style={{ minWidth: 200, maxWidth: 300, width: 'auto', zIndex: 9999 }}
+          className={`absolute z-50 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} ${resolvedAlign === 'right' ? 'right-0' : 'left-0'}`}
+          style={{
+            minWidth: 200,
+            maxWidth: 300,
+            width: 'auto',
+            zIndex: 9999
+          }}
         >
           {/* Cabeçalho do calendário */}
           <div className="flex flex-col gap-2 mb-3 sm:flex-row sm:items-center sm:justify-between">
@@ -250,17 +330,14 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(({
               </svg>
             </button>
 
-            <div className="flex-1 grid gap-2 grid-cols-1 items-center justify-center sm:grid-cols-[minmax(100px,1fr)_minmax(70px,1fr)]">
-              <select
+            <div className="flex-1 grid gap-2 grid-cols-1 items-center justify-center sm:grid-cols-[minmax(120px,1fr)_minmax(90px,1fr)]">
+              <Select
                 value={currentMonth.getMonth()}
-                onChange={(e) => setCurrentMonth(new Date(currentMonth.getFullYear(), parseInt(e.target.value)))}
-                className="w-full min-w-[100px] rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm font-semibold capitalize text-slate-700 focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
-              >
-                {['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 
-                  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'].map((month, i) => (
-                  <option key={i} value={i}>{month}</option>
-                ))}
-              </select>
+                onChange={(value) => setCurrentMonth(new Date(currentMonth.getFullYear(), Number(value)))}
+                options={monthOptions}
+                buttonClassName="h-[38px] rounded-lg px-2 py-1.5 text-sm font-semibold capitalize"
+                menuClassName="z-[10000]"
+              />
               <input
                 type="text"
                 value={yearInput}
@@ -309,14 +386,13 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(({
               for (let day = 1; day <= daysInMonth; day++) {
                 const date = new Date(year, month, day)
                 const isSelected = selectedDate?.toDateString() === date.toDateString()
-                const isToday = new Date().toDateString() === date.toDateString()
 
                 days.push(
                   <button
                     key={day}
                     type="button"
                     onClick={() => handleDateSelect(date)}
-                    className={`flex aspect-square items-center justify-center rounded-lg text-sm transition ${isSelected ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-700 hover:bg-blue-50'} ${isToday && !isSelected ? 'border border-blue-200' : 'border border-transparent'} focus:outline-none focus:ring-2 focus:ring-blue-100`}
+                    className={`flex aspect-square items-center justify-center rounded-lg text-sm transition ${isSelected ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-700 hover:bg-blue-50'} border border-transparent focus:outline-none focus:ring-2 focus:ring-blue-100`}
                   >
                     {day}
                   </button>

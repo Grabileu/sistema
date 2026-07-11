@@ -40,8 +40,9 @@ const EditarPeriodoExperienciaModal: React.FC<EditarPeriodoExperienciaModalProps
       onSubmit={onSubmit}
       submitButtonText="Salvar alterações"
     >
-        <div className="mb-6">
-          <span className="text-indigo-700 font-bold text-lg">Período de experiência</span>
+        <div className="mb-6 border-b border-slate-100 pb-3">
+          <h3 className="text-base font-semibold text-slate-900">Período de experiência</h3>
+          <p className="mt-1 text-xs text-slate-500">Defina o período e as datas de vigência.</p>
         </div>
         <form onSubmit={e => { e.preventDefault(); onSubmit(); }}>
           <div className="mb-4">

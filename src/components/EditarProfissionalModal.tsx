@@ -56,8 +56,9 @@ const EditarProfissionalModal: React.FC<EditarProfissionalModalProps> = ({ open,
       submitButtonText="Salvar alterações"
     >
       <form onSubmit={e => { e.preventDefault(); onSubmit(); }}>
-          <div className="mb-6">
-            <span className="text-indigo-700 font-bold text-lg">Informações profissionais</span>
+          <div className="mb-6 border-b border-slate-100 pb-3">
+            <h3 className="text-base font-semibold text-slate-900">Informações profissionais</h3>
+            <p className="mt-1 text-xs text-slate-500">Dados de admissão, identificação e vínculo funcional.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-8">
             <div>
@@ -102,8 +103,9 @@ const EditarProfissionalModal: React.FC<EditarProfissionalModalProps> = ({ open,
               <input type="text" value={values.registroProfissional} onChange={e => onChange('registroProfissional', e.target.value)} className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm" />
             </div>
           </div>
-          <div className="mb-6">
-            <span className="text-indigo-700 font-bold text-lg">Dados da ocupação</span>
+          <div className="mb-6 border-b border-slate-100 pb-3">
+            <h3 className="text-base font-semibold text-slate-900">Dados da ocupação</h3>
+            <p className="mt-1 text-xs text-slate-500">Informações de alocação, remuneração e elegibilidade.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             <div>
@@ -151,7 +153,7 @@ const EditarProfissionalModal: React.FC<EditarProfissionalModalProps> = ({ open,
               <label className="block text-gray-700 text-sm mb-1 font-medium">Departamento *</label>
               <input
                 type="text"
-                value={funcionarioView?.departamento || ''}
+                value={values.departamento || funcionarioView?.departamento || ''}
                 readOnly
                 disabled
                 tabIndex={-1}

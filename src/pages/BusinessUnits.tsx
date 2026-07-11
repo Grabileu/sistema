@@ -12,6 +12,7 @@ interface BusinessUnitsProps {
 
 const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate, onDeleteBusinessUnit, onEditBusinessUnit }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [isActionMenuUpward, setIsActionMenuUpward] = useState(false)
   const [companyData, setCompanyData] = useState<any>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -65,6 +66,27 @@ const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate
 
   useClickOutside(menuRef, () => setOpenMenuId(null))
 
+  const resolveActionMenuDirection = (button: HTMLButtonElement) => {
+    const rect = button.getBoundingClientRect()
+    const estimatedMenuHeight = 120
+    const margin = 12
+    const spaceBelow = window.innerHeight - rect.bottom - margin
+    const spaceAbove = rect.top - margin
+    const wouldOverflowBottom = rect.bottom + estimatedMenuHeight + margin > window.innerHeight
+
+    setIsActionMenuUpward(wouldOverflowBottom && spaceAbove > spaceBelow)
+  }
+
+  const toggleActionMenu = (id: string, event: React.MouseEvent<HTMLButtonElement>) => {
+    if (openMenuId === id) {
+      setOpenMenuId(null)
+      return
+    }
+
+    resolveActionMenuDirection(event.currentTarget)
+    setOpenMenuId(id)
+  }
+
   const handleDelete = (id: string) => {
     if (confirm('Tem certeza que deseja excluir esta loja?')) {
       onDeleteBusinessUnit?.(id)
@@ -114,14 +136,14 @@ const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate
                   {mainUnit.id !== 'company-main' && (
                     <div className="relative" ref={openMenuId === mainUnit.id ? menuRef : null}>
                       <button
-                        onClick={() => setOpenMenuId(openMenuId === mainUnit.id ? null : mainUnit.id)}
+                        onClick={(event) => toggleActionMenu(mainUnit.id, event)}
                         className="hover:bg-gray-100 p-2 rounded"
                       >
                         <MoreVertical size={20} />
                       </button>
                       
                       {openMenuId === mainUnit.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                        <div className={`absolute right-0 w-48 max-h-[min(16rem,calc(100vh-2rem))] overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white shadow-lg z-50 ${isActionMenuUpward ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
                           <button
                             onClick={() => {
                               onEditBusinessUnit?.(mainUnit.id)
@@ -219,14 +241,14 @@ const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="relative" ref={openMenuId === unit.id ? menuRef : null}>
                           <button
-                            onClick={() => setOpenMenuId(openMenuId === unit.id ? null : unit.id)}
+                            onClick={(event) => toggleActionMenu(unit.id, event)}
                             className="hover:bg-gray-100 p-1 rounded"
                           >
                             <MoreVertical size={18} />
                           </button>
                           
                           {openMenuId === unit.id && (
-                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                            <div className={`absolute right-0 w-48 max-h-[min(16rem,calc(100vh-2rem))] overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white shadow-lg z-50 ${isActionMenuUpward ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
                               <button
                                 onClick={() => {
                                   onEditBusinessUnit?.(unit.id)

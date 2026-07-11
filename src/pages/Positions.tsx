@@ -19,9 +19,31 @@ interface PositionsProps {
 
 const Positions: React.FC<PositionsProps> = ({ positions, onNavigate, onDeletePosition, onEditPosition }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [isActionMenuUpward, setIsActionMenuUpward] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useClickOutside(menuRef, () => setOpenMenuId(null))
+
+  const resolveActionMenuDirection = (button: HTMLButtonElement) => {
+    const rect = button.getBoundingClientRect()
+    const estimatedMenuHeight = 120
+    const margin = 12
+    const spaceBelow = window.innerHeight - rect.bottom - margin
+    const spaceAbove = rect.top - margin
+    const wouldOverflowBottom = rect.bottom + estimatedMenuHeight + margin > window.innerHeight
+
+    setIsActionMenuUpward(wouldOverflowBottom && spaceAbove > spaceBelow)
+  }
+
+  const toggleActionMenu = (id: string, event: React.MouseEvent<HTMLButtonElement>) => {
+    if (openMenuId === id) {
+      setOpenMenuId(null)
+      return
+    }
+
+    resolveActionMenuDirection(event.currentTarget)
+    setOpenMenuId(id)
+  }
 
   const handleDelete = (id: string) => {
     if (confirm('Tem certeza que deseja excluir este cargo?')) {
@@ -91,14 +113,14 @@ const Positions: React.FC<PositionsProps> = ({ positions, onNavigate, onDeletePo
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
                           <div className="relative" ref={openMenuId === position.id ? menuRef : null}>
                             <button
-                              onClick={() => setOpenMenuId(openMenuId === position.id ? null : position.id)}
+                              onClick={(event) => toggleActionMenu(position.id, event)}
                               className="rounded-lg p-1.5 transition hover:bg-slate-100"
                             >
                               <MoreVertical size={18} />
                             </button>
 
                             {openMenuId === position.id && (
-                              <div className="absolute right-0 z-50 mt-2 w-48 rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                              <div className={`absolute right-0 z-50 w-48 max-h-[min(16rem,calc(100vh-2rem))] overflow-y-auto overscroll-contain rounded-xl border border-slate-200 bg-white py-1 shadow-lg ${isActionMenuUpward ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
                                 <button
                                   onClick={() => {
                                     onEditPosition?.(position.id)

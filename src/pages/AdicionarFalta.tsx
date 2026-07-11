@@ -1,15 +1,26 @@
 import React, { useRef, useState } from 'react'
-import { Employee } from '../App'
+import { Employee, Falta } from '../App'
 import DatePicker from '../components/DatePicker'
 import Select from '../components/Select'
 import { buildEmployeeOptions } from '../utils/formatters'
 
+type FaltaFormData = {
+  funcionarioId: string
+  data: string
+  motivo: string
+}
+
+type FaltaFormErrors = {
+  funcionarioId: boolean
+  data: boolean
+}
+
 interface AdicionarFaltaProps {
   onNavigate?: (route: string) => void
-  onAddFalta?: (falta: any) => void
-  onUpdateFalta?: (falta: any) => void
+  onAddFalta?: (falta: Falta) => void
+  onUpdateFalta?: (falta: Falta) => void
   employees: Employee[]
-  editingFalta?: any
+  editingFalta?: Falta | null
 }
 
 const AdicionarFalta: React.FC<AdicionarFaltaProps> = ({ onNavigate, onAddFalta, onUpdateFalta, employees, editingFalta }) => {
@@ -19,13 +30,13 @@ const AdicionarFalta: React.FC<AdicionarFaltaProps> = ({ onNavigate, onAddFalta,
   const motivoRef = useRef<HTMLButtonElement>(null)
   const saveButtonRef = useRef<HTMLButtonElement>(null)
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FaltaFormData>({
     funcionarioId: editingFalta?.funcionarioId || '',
     data: editingFalta?.data || '',
     motivo: editingFalta?.motivo || ''
   })
 
-  const [errors, setErrors] = useState({
+  const [errors, setErrors] = useState<FaltaFormErrors>({
     funcionarioId: false,
     data: false
   })
@@ -104,8 +115,8 @@ const AdicionarFalta: React.FC<AdicionarFaltaProps> = ({ onNavigate, onAddFalta,
               <Select
                 value={formData.funcionarioId}
                 onChange={(value) => {
-                  setFormData({ ...formData, funcionarioId: String(value) })
-                  setErrors({ ...errors, funcionarioId: false })
+                  setFormData((prev) => ({ ...prev, funcionarioId: String(value) }))
+                  setErrors((prev) => ({ ...prev, funcionarioId: false }))
                 }}
                 options={employeeOptions}
                 buttonClassName={standardFieldClass}
@@ -125,8 +136,8 @@ const AdicionarFalta: React.FC<AdicionarFaltaProps> = ({ onNavigate, onAddFalta,
                 ref={dataRef}
                 value={formData.data}
                 onChange={(value) => {
-                  setFormData({ ...formData, data: value })
-                  setErrors({ ...errors, data: false })
+                  setFormData((prev) => ({ ...prev, data: value }))
+                  setErrors((prev) => ({ ...prev, data: false }))
                 }}
                 className={standardFieldClass}
                 nextRef={motivoRef}
@@ -142,7 +153,7 @@ const AdicionarFalta: React.FC<AdicionarFaltaProps> = ({ onNavigate, onAddFalta,
             <Select
               value={formData.motivo}
               onChange={(value) =>
-                setFormData({ ...formData, motivo: String(value) })
+                setFormData((prev) => ({ ...prev, motivo: String(value) }))
               }
               options={motivos}
               buttonClassName={standardFieldClass}

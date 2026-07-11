@@ -1,4 +1,16 @@
 // Função utilitária para registrar ações de afastamento/licença no histórico
+type RegistrarHistoricoLicencaParams = {
+  acao: string;
+  usuario?: string;
+  funcionarioNome: string;
+  tipoLicenca: string;
+  dataInicio?: string;
+  dataTermino?: string;
+  detalhes?: string;
+  entryId?: string;
+  setHistoryEntries: (updater: (prev: any[]) => any[]) => void;
+};
+
 function registrarHistoricoLicenca({
   acao,
   usuario,
@@ -7,10 +19,11 @@ function registrarHistoricoLicenca({
   dataInicio,
   dataTermino,
   detalhes,
+  entryId,
   setHistoryEntries
-}) {
+}: RegistrarHistoricoLicencaParams) {
   // Converte datas de DD/MM/AAAA para AAAA-MM-DD se necessário
-  function toISO(dateStr) {
+  function toISO(dateStr?: string) {
     if (!dateStr) return '';
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
     const [dia, mes, ano] = dateStr.split('/');
@@ -22,9 +35,9 @@ function registrarHistoricoLicenca({
   const periodo = terminoISO && terminoISO !== inicioISO
     ? `${inicioISO} a ${terminoISO}`
     : inicioISO;
-  setHistoryEntries((prev) => [
+  setHistoryEntries((prev: any[]) => [
     {
-      id: `${acao}-${funcionarioNome}-${tipoLicenca}-${periodo}-${Date.now()}`,
+      id: entryId || `${acao}-${funcionarioNome}-${tipoLicenca}-${periodo}-${Date.now()}`,
       usuario: usuario || 'Usuário',
       acao,
       alvo: funcionarioNome ? `para ${funcionarioNome.replace(/^para /, '')}` : '',
@@ -369,6 +382,17 @@ function App() {
     localStorage.removeItem('historyEntries');
   };
 
+  // Limpeza única para reiniciar os testes de histórico sem afetar gravações futuras.
+  useEffect(() => {
+    const resetKey = 'historyEntriesResetDone_v2';
+    const alreadyReset = localStorage.getItem(resetKey) === 'true';
+    if (!alreadyReset) {
+      limparHistorico();
+      localStorage.setItem(resetKey, 'true');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Sempre salvar histórico no localStorage
   useEffect(() => {
     localStorage.setItem('historyEntries', JSON.stringify(historyEntries));
@@ -409,6 +433,8 @@ function App() {
 
   const handleLogin = (user: LoggedUser) => {
     setLoggedUser(user)
+    setCurrentPage('dashboard')
+    localStorage.setItem('currentPage', 'dashboard')
   }
 
   const handleLogout = () => {
@@ -473,6 +499,13 @@ function App() {
     const storedPage = localStorage.getItem('currentPage');
     return storedPage || 'dashboard';
   });
+
+  useEffect(() => {
+    if (currentPage === 'dashboard') {
+      setActiveTab('controle')
+    }
+  }, [currentPage])
+
   const [employees, setEmployees] = useState<Employee[]>(() => {
     const storedEmployees = localStorage.getItem('employees')
     if (storedEmployees) {
@@ -663,6 +696,29 @@ function App() {
       window.history.pushState({ page: currentPage }, '', `#${currentPage}`)
     }
   }, [currentPage])
+
+  useEffect(() => {
+    const resetScrollToTop = () => {
+      const appScrollArea = document.querySelector<HTMLElement>('.app-scroll-area')
+      appScrollArea?.scrollTo({ top: 0, behavior: 'auto' })
+      window.scrollTo({ top: 0, behavior: 'auto' })
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+    }
+
+    const frame = window.requestAnimationFrame(resetScrollToTop)
+    const dashboardTimer =
+      currentPage === 'dashboard'
+        ? window.setTimeout(resetScrollToTop, 220)
+        : null
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+      if (dashboardTimer !== null) {
+        window.clearTimeout(dashboardTimer)
+      }
+    }
+  }, [currentPage, activeTab])
 
   useEffect(() => {
     const onStorage = () => {
@@ -1180,40 +1236,62 @@ function App() {
   // ...existing code...
 
   // Sincronizar histórico de afastamentos/licenças (FeriasEAfastamentos)
+  const licencaSyncInitializedRef = React.useRef(false);
+  const knownLancamentosLicencaRef = React.useRef<Set<string>>(new Set());
+
+  const getLancamentoLicencaKey = (lanc: any) => {
+    if (lanc?.id) return String(lanc.id);
+    const nome = lanc?.employeeName || lanc?.nome || lanc?.colaboradorNome || lanc?.funcionarioNome || lanc?.nomeColaborador || lanc?.nomeFuncionario || '';
+    const tipo = lanc?.tipoLicenca || 'Licença';
+    const inicio = lanc?.dataInicio || '';
+    const termino = lanc?.dataTermino || '';
+    return `${nome}-${tipo}-${inicio}-${termino}`;
+  };
+
   useEffect(() => {
-    // Sempre que houver alteração nos lançamentos de licença, registrar inclusões e exclusões
+    // Sempre que houver alteração nos lançamentos de licença, registrar apenas novos lançamentos.
     const lancamentosRaw = localStorage.getItem('lancamentosLicenca');
-    let lancamentos = [];
+    let lancamentos: any[] = [];
     if (lancamentosRaw) {
       try {
         lancamentos = JSON.parse(lancamentosRaw);
       } catch { lancamentos = []; }
     }
-    // Recuperar histórico já registrado para evitar duplicidade
-    const historicoIds = new Set(historyEntries.map(h => h.id));
-    // Adicionar lançamentos que ainda não estão no histórico
-    lancamentos.forEach((lanc) => {
+
+    const currentKeys = new Set(lancamentos.map(getLancamentoLicencaKey));
+    if (!licencaSyncInitializedRef.current) {
+      knownLancamentosLicencaRef.current = currentKeys;
+      licencaSyncInitializedRef.current = true;
+      return;
+    }
+
+    const novosLancamentos = lancamentos.filter(
+      (lanc) => !knownLancamentosLicencaRef.current.has(getLancamentoLicencaKey(lanc))
+    );
+
+    // Registrar apenas os novos lançamentos detectados.
+    lancamentos.forEach((lanc: any) => {
+      const lancKey = getLancamentoLicencaKey(lanc);
+      if (!novosLancamentos.some((novo) => getLancamentoLicencaKey(novo) === lancKey)) return;
+
       const periodo = lanc.dataTermino && lanc.dataTermino !== lanc.dataInicio
         ? `${lanc.dataInicio} a ${lanc.dataTermino}`
         : lanc.dataInicio;
       const nomeFuncionario = lanc.employeeName || lanc.nome || lanc.colaboradorNome || lanc.funcionarioNome || lanc.nomeColaborador || lanc.nomeFuncionario || lanc.nome || '';
-      const id = `Cadastro-${nomeFuncionario}-${lanc.tipoLicenca || 'Licença'}-${periodo}`;
-      if (!Array.from(historicoIds).some(hid => hid.startsWith(id))) {
-        registrarHistoricoLicenca({
-          acao: `Cadastrou ${lanc.tipoLicenca || 'Licença'}`,
-          usuario: loggedUser?.nome,
-          funcionarioNome: nomeFuncionario ? `para ${nomeFuncionario}` : '',
-          tipoLicenca: lanc.tipoLicenca || 'Licença',
-          dataInicio: lanc.dataInicio,
-          dataTermino: lanc.dataTermino,
-          detalhes: lanc.observacao ? `Obs: ${lanc.observacao}` : undefined,
-          setHistoryEntries,
-        });
-      }
+      registrarHistoricoLicenca({
+        entryId: `licenca-cad-${lancKey}`,
+        acao: `Cadastrou ${lanc.tipoLicenca || 'Licença'}`,
+        usuario: loggedUser?.nome,
+        funcionarioNome: nomeFuncionario ? `para ${nomeFuncionario}` : '',
+        tipoLicenca: lanc.tipoLicenca || 'Licença',
+        dataInicio: lanc.dataInicio,
+        dataTermino: lanc.dataTermino,
+        detalhes: lanc.observacao ? `Obs: ${lanc.observacao}` : undefined,
+        setHistoryEntries,
+      });
     });
-    // Remover do histórico se o lançamento foi excluído (opcional: manter registro de exclusão)
-    // Se quiser registrar exclusão, pode comparar com um snapshot anterior
-    // Aqui, só adiciona inclusões
+
+    knownLancamentosLicencaRef.current = currentKeys;
   }, [localStorage.getItem('lancamentosLicenca')]);
 
   const handleEditTeam = (id: string) => {
@@ -1269,6 +1347,19 @@ function App() {
     setFaltas((prevFaltas) =>
       prevFaltas.map(f => f.id === updatedFalta.id ? updatedFalta : f)
     )
+    setHistoryEntries((prev) => [
+      {
+        id: 'falta-upd-' + updatedFalta.id + '-' + Date.now(),
+        usuario: loggedUser?.nome || 'Usuário',
+        acao: 'Editou falta',
+        alvo: updatedFalta.funcionarioNome ? `para ${updatedFalta.funcionarioNome.replace(/^para /, '')}` : '',
+        tipo: 'falta',
+        dataRegistro: new Date().toISOString(),
+        dataEvento: updatedFalta.data,
+        detalhes: updatedFalta.motivo ? `Motivo: ${updatedFalta.motivo}` : undefined,
+      },
+      ...prev
+    ])
     setEditingFaltaId(null)
     setCurrentPage('faltas')
   }
@@ -1321,6 +1412,19 @@ function App() {
     setAtrasos((prev) =>
       prev.map(a => a.id === updated.id ? updated : a)
     )
+    setHistoryEntries((prev) => [
+      {
+        id: 'atraso-upd-' + updated.id + '-' + Date.now(),
+        usuario: loggedUser?.nome || 'Usuário',
+        acao: 'Editou atraso',
+        alvo: updated.funcionarioNome ? `para ${updated.funcionarioNome.replace(/^para /, '')}` : '',
+        tipo: 'atraso',
+        dataRegistro: new Date().toISOString(),
+        dataEvento: updated.data,
+        detalhes: updated.motivo ? `Motivo: ${updated.motivo}` : undefined,
+      },
+      ...prev
+    ])
     setEditingAtrasoId(null)
     setCurrentPage('atrasos')
   }
@@ -1373,6 +1477,19 @@ function App() {
     setQuebras((prev) =>
       prev.map(q => q.id === updated.id ? updated : q)
     )
+    setHistoryEntries((prev) => [
+      {
+        id: 'quebra-upd-' + updated.id + '-' + Date.now(),
+        usuario: loggedUser?.nome || 'Usuário',
+        acao: 'Editou quebra de caixa',
+        alvo: updated.funcionarioNome ? `para ${updated.funcionarioNome.replace(/^para /, '')}` : '',
+        tipo: 'outro',
+        dataRegistro: new Date().toISOString(),
+        dataEvento: updated.data,
+        detalhes: updated.formaPagamento ? `Forma de pagamento: ${updated.formaPagamento}` : undefined,
+      },
+      ...prev
+    ])
     setEditingQuebraId(null)
     setCurrentPage('quebra-de-caixa')
   }
@@ -1442,7 +1559,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" onKeyDownCapture={handleGlobalEnterNavigation}>
+    <div className="h-screen overflow-hidden bg-gray-50" onKeyDownCapture={handleGlobalEnterNavigation}>
       <SystemMotionFeedback showRoutePulse={showRoutePulse} connectionState={connectionState} />
       {deleteBlockedModal && (
         <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm px-4">
@@ -1527,7 +1644,7 @@ function App() {
         canAccessRoute={canAccessRouteForCurrentUser}
       />
       
-      <div>
+      <div className="app-scroll-area h-screen overflow-y-auto">
         <Header 
           onMenuClick={() => setMenuOpen(!menuOpen)} 
           loggedUser={loggedUser} 
@@ -1570,7 +1687,7 @@ function App() {
                     )}
                     {activeTab === 'historico' && (
                       <div className="mt-6">
-                        <HistoryList entries={historyEntries} />
+                        <HistoryList entries={historyEntries} onClearHistory={limparHistorico} />
                       </div>
                     )}
                   </div>
@@ -1612,7 +1729,10 @@ function App() {
                 <LancamentoIndividualOuMassa />
               )}
               {currentPage === 'lancamento-individual' && (
-                <LancamentoIndividual />
+                <LancamentoIndividual onSuccess={showSuccessToast} />
+              )}
+              {currentPage === 'lancamento-massa' && (
+                <LancamentoIndividual mode="massa" onSuccess={showSuccessToast} />
               )}
               {currentPage === 'calendario' && (
                 <Calendar />

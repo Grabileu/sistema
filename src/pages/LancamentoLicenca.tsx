@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Baby, Ban, Briefcase, CakeSlice, CalendarDays, Coffee, Palmtree, Stethoscope } from 'lucide-react';
 import { CSSTransition, SwitchTransition } from 'react-transition-group';
 
 const licencas = [
@@ -58,68 +59,51 @@ const licencas = [
 ];
 
 function getIcon(nome) {
-  switch (nome) {
-    case 'Férias':
-      return (
-        <span className="text-yellow-500">
-          <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#fbbf24" strokeWidth="2"/><path d="M8 16l8-8" stroke="#fbbf24" strokeWidth="2"/><path d="M16 16l-8-8" stroke="#fbbf24" strokeWidth="2"/></svg>
-        </span>
-      );
-    case 'Afastamento':
-      return (
-        <span className="text-red-500">
-          <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" stroke="#ef4444" strokeWidth="2"/><path d="M8 8l8 8M16 8l-8 8" stroke="#ef4444" strokeWidth="2"/></svg>
-        </span>
-      );
-    case 'Atestado médico':
-      return (
-        <span className="text-green-500">
-          <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" stroke="#22c55e" strokeWidth="2"/><path d="M12 8v8M8 12h8" stroke="#22c55e" strokeWidth="2"/></svg>
-        </span>
-      );
-    case 'Licença Remunerada':
-      return (
-        <span className="text-blue-500">
-          <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#3b82f6" strokeWidth="2"/><path d="M8 12h8" stroke="#3b82f6" strokeWidth="2"/></svg>
-        </span>
-      );
-    case 'Licença':
-      return (
-        <span className="text-indigo-500">
-          <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" stroke="#6366f1" strokeWidth="2"/><path d="M8 8h8v8H8z" stroke="#6366f1" strokeWidth="2"/></svg>
-        </span>
-      );
-    case 'Licença Maternidade':
-      return (
-        <span className="text-pink-500">
-          <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><ellipse cx="12" cy="15" rx="6" ry="4" stroke="#ec4899" strokeWidth="2"/><circle cx="12" cy="9" r="3" stroke="#ec4899" strokeWidth="2"/></svg>
-        </span>
-      );
-    case 'Licença Paternidade':
-      return (
-        <span className="text-blue-800">
-          <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><ellipse cx="12" cy="15" rx="6" ry="4" stroke="#1e40af" strokeWidth="2"/><rect x="9" y="7" width="6" height="4" stroke="#1e40af" strokeWidth="2"/></svg>
-        </span>
-      );
-    case 'Férias Coletiva':
-      return (
-        <span className="text-orange-500">
-          <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="8" rx="4" stroke="#f97316" strokeWidth="2"/><path d="M4 8l8 8 8-8" stroke="#f97316" strokeWidth="2"/></svg>
-        </span>
-      );
-    case 'Folga':
-      return (
-        <span className="text-teal-500">
-          <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#14b8a6" strokeWidth="2"/><path d="M8 16l8-8" stroke="#14b8a6" strokeWidth="2"/></svg>
-        </span>
-      );
-    default:
-      return (
-        <span className="text-blue-600">
-          <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" stroke="#2563eb" strokeWidth="2"/><path d="M8 8h8v8H8z" stroke="#2563eb" strokeWidth="2"/></svg>
-        </span>
-      );
+  const normalized = (nome || '').toLowerCase();
+
+  const isAtestado = /atestado|m[ée]dico|amamenta/.test(normalized);
+  const isMaternidade = /maternidade|gestante/.test(normalized);
+  const isHappyDay = /happy day/.test(normalized);
+  const isAfastamento = /afastamento|suspens|rescis|falecimento|nojo/.test(normalized);
+  const isFerias = /férias|ferias|praia|férias coletiva|ferias coletiva/.test(normalized);
+  const isFolga = /folga|recesso|banco de horas/.test(normalized);
+  const isTrabalho = /teletrabalho|servi[çc]o|treinamento|exame|declaração|justi[çc]a|pleito|obra|quarentena/.test(normalized);
+
+  const badge = (tone: string, icon: React.ReactNode) => (
+    <span className={`inline-flex h-9 w-9 items-center justify-center rounded-full border ${tone}`}>
+      {icon}
+    </span>
+  );
+
+  if (isAtestado) {
+    return badge('border-emerald-200 bg-emerald-50 text-emerald-600', <Stethoscope size={19} strokeWidth={2.2} />);
   }
+
+  if (isMaternidade) {
+    return badge('border-pink-200 bg-pink-50 text-pink-600', <Baby size={19} strokeWidth={2.2} />);
+  }
+
+  if (isHappyDay) {
+    return badge('border-fuchsia-200 bg-fuchsia-50 text-fuchsia-600', <CakeSlice size={19} strokeWidth={2.2} />);
+  }
+
+  if (isAfastamento) {
+    return badge('border-rose-200 bg-rose-50 text-rose-600', <Ban size={19} strokeWidth={2.2} />);
+  }
+
+  if (isFerias) {
+    return badge('border-amber-200 bg-amber-50 text-amber-600', <Palmtree size={19} strokeWidth={2.2} />);
+  }
+
+  if (isFolga) {
+    return badge('border-teal-200 bg-teal-50 text-teal-600', <Coffee size={19} strokeWidth={2.2} />);
+  }
+
+  if (isTrabalho) {
+    return badge('border-sky-200 bg-sky-50 text-sky-600', <Briefcase size={19} strokeWidth={2.2} />);
+  }
+
+  return badge('border-indigo-200 bg-indigo-50 text-indigo-600', <CalendarDays size={19} strokeWidth={2.2} />);
 }
 
 const LancamentoLicenca = () => {

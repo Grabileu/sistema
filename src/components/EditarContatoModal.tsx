@@ -36,8 +36,10 @@ const EditarContatoModal: React.FC<EditarContatoModalProps> = ({ open, values, o
       submitButtonText="Salvar alterações"
     >
       <div className="space-y-4">
-        <div>
-          <h3 className="text-lg font-bold text-indigo-700 mb-4">Contato</h3>
+        <div className="mb-4 border-b border-slate-100 pb-3">
+          <h3 className="text-base font-semibold text-slate-900">Contato</h3>
+          <p className="mt-1 text-xs text-slate-500">Atualize os canais principais de comunicação.</p>
+        </div>
           
           <div className="mb-4">
             <label className="block text-gray-700 text-sm mb-1 font-medium">
@@ -114,15 +116,14 @@ const EditarContatoModal: React.FC<EditarContatoModalProps> = ({ open, values, o
             </div>
           </div>
 
-          <div className="mt-4">
-            <label className="block text-gray-700 text-sm mb-1 font-medium">Linkedin</label>
-            <input
-              className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm"
-              value={values.linkedin}
-              onChange={e => onChange('linkedin', e.target.value)}
-              placeholder="Digite"
-            />
-          </div>
+        <div className="mt-4">
+          <label className="block text-gray-700 text-sm mb-1 font-medium">LinkedIn</label>
+          <input
+            className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm"
+            value={values.linkedin}
+            onChange={e => onChange('linkedin', e.target.value)}
+            placeholder="Digite"
+          />
         </div>
       </div>
     </GenericEditModal>

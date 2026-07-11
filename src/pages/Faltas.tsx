@@ -41,6 +41,7 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
     return null
   })
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [isActionMenuUpward, setIsActionMenuUpward] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ id: string; funcionarioNome: string } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -77,6 +78,27 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
   })
 
   useClickOutside(menuRef, () => setOpenMenuId(null))
+
+  const resolveActionMenuDirection = (button: HTMLButtonElement) => {
+    const rect = button.getBoundingClientRect()
+    const estimatedMenuHeight = 120
+    const margin = 12
+    const spaceBelow = window.innerHeight - rect.bottom - margin
+    const spaceAbove = rect.top - margin
+    const wouldOverflowBottom = rect.bottom + estimatedMenuHeight + margin > window.innerHeight
+
+    setIsActionMenuUpward(wouldOverflowBottom && spaceAbove > spaceBelow)
+  }
+
+  const toggleActionMenu = (id: string, event: React.MouseEvent<HTMLButtonElement>) => {
+    if (openMenuId === id) {
+      setOpenMenuId(null)
+      return
+    }
+
+    resolveActionMenuDirection(event.currentTarget)
+    setOpenMenuId(id)
+  }
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -171,7 +193,8 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
   const handleDataInicioChange = (value: string) => {
     setInputDataInicio(value)
     // Pular para o campo de data fim após selecionar data início
-    if (value && dataFimRef.current) {
+    const isCompleteDate = /^\d{2}\/\d{2}\/\d{4}$/.test(value)
+    if (isCompleteDate && dataFimRef.current) {
       setTimeout(() => {
         dataFimRef.current?.focus()
         // Abrir o calendário automaticamente após focar
@@ -420,7 +443,7 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium relative">
                         <button
-                          onClick={() => setOpenMenuId(openMenuId === falta.id ? null : falta.id)}
+                          onClick={(event) => toggleActionMenu(falta.id, event)}
                           className="text-gray-400 hover:text-gray-600"
                         >
                           <MoreVertical size={18} />
@@ -428,7 +451,7 @@ const Faltas: React.FC<FaltasProps> = ({ employees, faltas, onNavigate, onDelete
                         {openMenuId === falta.id && (
                           <div
                             ref={menuRef}
-                            className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-10"
+                            className={`absolute right-0 w-40 max-h-[min(16rem,calc(100vh-2rem))] overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white shadow-lg z-10 ${isActionMenuUpward ? 'bottom-full mb-2' : 'top-full mt-2'}`}
                           >
                             <button
                               onClick={() => {

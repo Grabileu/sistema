@@ -481,7 +481,7 @@ const Calendar: React.FC = () => {
           </div>
         </div>
 
-        <div className="relative w-full overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50 shadow-sm">
+        <div className="calendar-scrollbar relative w-full overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50 shadow-sm">
           <table className="w-full min-w-full border-separate border-spacing-0">
             <thead className="sticky top-0 z-10">
             <tr>

@@ -1,15 +1,26 @@
 import React, { useRef, useState } from 'react'
-import { Employee } from '../App'
+import { Employee, Atraso } from '../App'
 import DatePicker from '../components/DatePicker'
 import Select from '../components/Select'
 import { buildEmployeeOptions } from '../utils/formatters'
 
+type AtrasoFormData = {
+  funcionarioId: string
+  data: string
+  motivo: string
+}
+
+type AtrasoFormErrors = {
+  funcionarioId: boolean
+  data: boolean
+}
+
 interface AdicionarAtrasoProps {
   onNavigate?: (route: string) => void
-  onAddAtraso?: (atraso: any) => void
-  onUpdateAtraso?: (atraso: any) => void
+  onAddAtraso?: (atraso: Atraso) => void
+  onUpdateAtraso?: (atraso: Atraso) => void
   employees: Employee[]
-  editingAtraso?: any
+  editingAtraso?: Atraso | null
 }
 
 const AdicionarAtraso: React.FC<AdicionarAtrasoProps> = ({ onNavigate, onAddAtraso, onUpdateAtraso, employees, editingAtraso }) => {
@@ -19,13 +30,13 @@ const AdicionarAtraso: React.FC<AdicionarAtrasoProps> = ({ onNavigate, onAddAtra
   const motivoRef = useRef<HTMLButtonElement>(null)
   const saveButtonRef = useRef<HTMLButtonElement>(null)
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<AtrasoFormData>({
     funcionarioId: editingAtraso?.funcionarioId || '',
     data: editingAtraso?.data || '',
     motivo: editingAtraso?.motivo || ''
   })
 
-  const [errors, setErrors] = useState({
+  const [errors, setErrors] = useState<AtrasoFormErrors>({
     funcionarioId: false,
     data: false
   })
@@ -97,8 +108,8 @@ const AdicionarAtraso: React.FC<AdicionarAtrasoProps> = ({ onNavigate, onAddAtra
               <Select
                 value={formData.funcionarioId}
                 onChange={(value) => {
-                  setFormData({ ...formData, funcionarioId: String(value) })
-                  setErrors({ ...errors, funcionarioId: false })
+                  setFormData((prev) => ({ ...prev, funcionarioId: String(value) }))
+                  setErrors((prev) => ({ ...prev, funcionarioId: false }))
                 }}
                 options={employeeOptions}
                 buttonClassName={standardFieldClass}
@@ -118,8 +129,8 @@ const AdicionarAtraso: React.FC<AdicionarAtrasoProps> = ({ onNavigate, onAddAtra
                 ref={dataRef}
                 value={formData.data}
                 onChange={(value) => {
-                  setFormData({ ...formData, data: value })
-                  setErrors({ ...errors, data: false })
+                  setFormData((prev) => ({ ...prev, data: value }))
+                  setErrors((prev) => ({ ...prev, data: false }))
                 }}
                 className={standardFieldClass}
                 nextRef={motivoRef}
@@ -135,7 +146,7 @@ const AdicionarAtraso: React.FC<AdicionarAtrasoProps> = ({ onNavigate, onAddAtra
             <Select
               value={formData.motivo}
               onChange={(value) =>
-                setFormData({ ...formData, motivo: String(value) })
+                setFormData((prev) => ({ ...prev, motivo: String(value) }))
               }
               options={motivos}
               buttonClassName={standardFieldClass}
