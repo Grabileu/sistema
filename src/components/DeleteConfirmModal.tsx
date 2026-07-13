@@ -7,6 +7,8 @@ interface DeleteConfirmModalProps {
   itemName: string
   onConfirm: () => void
   onCancel: () => void
+  confirmButtonText?: string
+  cancelButtonText?: string
 }
 
 const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
@@ -15,6 +17,8 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   itemName,
   onConfirm,
   onCancel,
+  confirmButtonText = 'Excluir',
+  cancelButtonText = 'Cancelar',
 }) => {
 
   useEffect(() => {
@@ -46,8 +50,8 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
               <AlertTriangle size={20} />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">{title.replace(/excluir|Excluir/g, 'Demitir')}</h2>
-              <p className="text-xs text-gray-500">Você tem certeza que deseja demitir este funcionário? Você poderá readmiti-lo novamente a qualquer momento.</p>
+              <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+              <p className="text-xs text-gray-500">{description}</p>
             </div>
           </div>
           <button
@@ -70,14 +74,14 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
               onClick={onCancel}
               className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
-              Cancelar
+              {cancelButtonText}
             </button>
             <button
               onClick={onConfirm}
               className="flex items-center justify-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
             >
               <Trash2 size={16} />
-              Demitir
+              {confirmButtonText}
             </button>
           </div>
         </div>

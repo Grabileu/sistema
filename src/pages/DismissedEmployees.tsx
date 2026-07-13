@@ -9,6 +9,7 @@ interface DismissedEmployeesProps {
     id: string;
     nomeCompleto: string;
     email?: string;
+    cpf?: string;
     dataDemissao?: string;
     avatar?: string;
   }>;
@@ -121,13 +122,14 @@ const DismissedEmployees: React.FC<DismissedEmployeesProps> = ({ employees }) =>
                 <tr className="text-left text-gray-500 border-b">
                   <th className="py-3">Data de demissão</th>
                   <th className="py-3">Funcionário</th>
+                  <th className="py-3">CPF</th>
                   <th className="py-3">Ações</th>
                 </tr>
               </thead>
               <tbody className="text-gray-700">
                 {dismissed.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="py-12 text-center text-sm text-gray-500">
+                    <td colSpan={4} className="py-12 text-center text-sm text-gray-500">
                       Nenhum funcionário demitido encontrado.
                     </td>
                   </tr>
@@ -144,6 +146,9 @@ const DismissedEmployees: React.FC<DismissedEmployeesProps> = ({ employees }) =>
                           <div className="text-xs text-gray-500">{d.email}</div>
                         </div>
                       </div>
+                    </td>
+                    <td className="py-4 text-sm text-gray-500">
+                      {d.cpf || '-'}
                     </td>
                     <td className="py-4 text-center">
                       <button
@@ -168,43 +173,6 @@ const DismissedEmployees: React.FC<DismissedEmployeesProps> = ({ employees }) =>
                     </td>
                   </tr>
                 ))}
-                    {/* Menu de opções fora da tabela, logo abaixo dos pontinhos */}
-                    {openMenuId !== null && menuPosition && ReactDOM.createPortal(
-                      <>
-                        <div className="fixed inset-0 z-[99998]" onClick={() => { setOpenMenuId(null); setMenuPosition(null); }}></div>
-                        <div
-                          className="absolute z-[99999] w-40 bg-white rounded-md shadow-xl border border-gray-200 py-1"
-                          style={{ top: menuPosition.top + 4, left: menuPosition.left }}
-                        >
-                          <button
-                            className="w-full px-4 py-2 text-left text-sm text-indigo-600 hover:bg-gray-100"
-                            onClick={() => {
-                              setOpenMenuId(null);
-                              setMenuPosition(null);
-                              const demitido = dismissed.find(d => d.id === openMenuId);
-                              if (demitido) setShowConfirm({id: demitido.id, nome: demitido.nomeCompleto});
-                            }}
-                          >Readmitir</button>
-                        </div>
-                      </>,
-                      document.body
-                    )}
-
-                    {/* Modal customizado de confirmação */}
-                    {showConfirm && ReactDOM.createPortal(
-                      <div className="fixed inset-0 z-[999999] flex items-center justify-center">
-                        <div className="bg-black bg-opacity-40 absolute inset-0" onClick={() => setShowConfirm(null)}></div>
-                        <div className="relative z-10 w-[350px] bg-white rounded-xl shadow-2xl border border-gray-200 p-6 flex flex-col items-center">
-                          <h2 className="text-lg font-bold mb-2 text-gray-800">Deseja readmitir o demitido?</h2>
-                          <p className="text-sm text-gray-500 mb-6">{showConfirm.nome}</p>
-                          <div className="flex gap-4 mt-2">
-                            <button className="px-6 py-2 rounded-full border border-gray-300 text-gray-600 font-semibold hover:bg-gray-100 transition" onClick={() => setShowConfirm(null)}>Cancelar</button>
-                            <button className="px-6 py-2 rounded-full bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700 transition" onClick={() => { setShowConfirm(null); if (showConfirm) handleReadmit(showConfirm.id); }}>Confirmar</button>
-                          </div>
-                        </div>
-                      </div>,
-                      document.body
-                    )}
               </tbody>
             </table>
           </div>

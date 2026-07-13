@@ -829,7 +829,7 @@ function App() {
       setCurrentPage('lancamento-licenca')
       return
     }
-    if (route === 'Funcionários ativos' || route === 'Funcionários') {
+    if (route === 'Funcionários ativos' || route === 'Funcionários' || route === 'funcionarios-ativos') {
       setCurrentPage('funcionarios-ativos')
       return
     }
@@ -1802,6 +1802,7 @@ function App() {
         {currentPage === 'unidades-negocio' && (
           <BusinessUnits 
             businessUnits={businessUnits} 
+            employees={employees}
             onNavigate={handleNavigate} 
             onDeleteBusinessUnit={handleDeleteBusinessUnit} 
             onEditBusinessUnit={handleEditBusinessUnit} 
@@ -1955,7 +1956,6 @@ function App() {
             onAddBeneficio={handleAddBeneficio}
             onUpdateBeneficio={handleUpdateBeneficio}
             onDeleteBeneficio={handleDeleteBeneficio}
-            onToggleBeneficio={handleToggleBeneficio}
           />
         )}
         {currentPage === 'feriados' && (

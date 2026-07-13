@@ -205,11 +205,11 @@ const TeamCreate: React.FC<TeamCreateProps> = ({ onNavigate, departments, busine
       })
       setTeamEmployeeIds(editingTeam.employeeIds || [])
       // Restaurar gestores selecionados ao editar usando gestorIds
-      if (editingTeam.gestorIds && Array.isArray(editingTeam.gestorIds)) {
-        const gestores = employees.filter(e => editingTeam.gestorIds.includes(e.id));
-        setGestoresSelecionados(gestores);
+      if (editingTeam?.gestorIds && Array.isArray(editingTeam.gestorIds)) {
+        const gestores = employees.filter((e) => editingTeam.gestorIds?.includes(e.id))
+        setGestoresSelecionados(gestores)
       } else {
-        setGestoresSelecionados([]);
+        setGestoresSelecionados([])
       }
       return;
     }

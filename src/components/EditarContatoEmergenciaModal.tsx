@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { maskCelular, maskTelefone } from '../utils/masks';
 import Select from './Select';
 import GenericEditModal from './GenericEditModal';
@@ -33,17 +33,38 @@ const RELACAO_OPTIONS = [
 ];
 
 const EditarContatoEmergenciaModal: React.FC<EditarContatoEmergenciaModalProps> = ({ open, values, onChange, onClose, onSubmit, RemoverBotao, onRemover }) => {
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const celularInvalido = hasSubmitted && values.celular.replace(/\D/g, '').length < 11;
+
+  const handleSubmit = () => {
+    setHasSubmitted(true);
+    if (values.celular.replace(/\D/g, '').length < 11) {
+      return;
+    }
+    onSubmit();
+  };
+
   return (
     <GenericEditModal
       isOpen={open}
-      title="Editar dados do funcionário"
+      title="Contato de emergência"
       onClose={onClose}
-      onSubmit={onSubmit}
-      submitButtonText="Salvar alterações"
+      onSubmit={handleSubmit}
+      submitButtonText="Salvar contato"
+      cancelButtonText="Cancelar"
     >
-      <div className="mb-4 border-b border-slate-100 pb-3">
-        <h3 className="text-base font-semibold text-slate-900">Contatos de emergência</h3>
-        <p className="mt-1 text-xs text-slate-500">Cadastre quem deve ser acionado em situações urgentes.</p>
+      <div className="mb-5 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+        <div className="flex items-start gap-3">
+          <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-700">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.75a4.25 4.25 0 110 8.5 4.25 4.25 0 010-8.5zM6.75 20.25a5.25 5.25 0 0110.5 0" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">Organize contatos de emergência</h3>
+            <p className="mt-1 text-sm text-slate-500">Preencha os dados para permitir acionamento rápido em caso de urgência.</p>
+          </div>
+        </div>
       </div>
       <form
         onSubmit={e => {
@@ -51,26 +72,22 @@ const EditarContatoEmergenciaModal: React.FC<EditarContatoEmergenciaModalProps> 
           onSubmit();
         }}
       >
-          <div className="mb-4 border-b pb-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="font-bold text-gray-800">Contato 1</div>
-              {RemoverBotao && onRemover && (
-                <button type="button" className="text-red-500 text-sm flex items-center gap-1" onClick={onRemover}>
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  Remover
-                </button>
-              )}
+        <div className="grid grid-cols-1 gap-4">
+          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <div className="text-sm font-semibold text-slate-900">Contato de emergência</div>
+                <p className="text-xs text-slate-500">Insira dados completos para contato prioritário.</p>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-gray-700 text-sm mb-1 font-medium">Nome</label>
                 <input
-                  className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                   value={values.nome}
                   onChange={e => onChange('nome', e.target.value)}
-                  placeholder="Digite"
+                  placeholder="Digite o nome"
                 />
               </div>
               <div>
@@ -79,25 +96,31 @@ const EditarContatoEmergenciaModal: React.FC<EditarContatoEmergenciaModalProps> 
                   value={values.relacao}
                   onChange={v => onChange('relacao', String(v))}
                   options={RELACAO_OPTIONS}
+                  buttonClassName="h-12"
                 />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <div>
-                <label className="block text-gray-700 text-sm mb-1 font-medium">Celular</label>
+                <label className="block text-gray-700 text-sm mb-1 font-medium">
+                  Celular <span className="text-red-600">*</span>
+                </label>
                 <input
-                  className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm"
+                  className={`w-full rounded-2xl border bg-slate-50 px-3 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 ${celularInvalido ? 'border-red-300 focus:border-red-500 focus:ring-red-100' : 'border-slate-200 focus:border-indigo-300 focus:ring-indigo-100'}`}
                   value={maskCelular(values.celular)}
                   onChange={e => onChange('celular', maskCelular(e.target.value))}
                   placeholder="(99) 99999-9999"
                   maxLength={15}
                   inputMode="tel"
                 />
+                {celularInvalido && (
+                  <p className="mt-1 text-sm text-red-600">O celular é obrigatório e deve ter 11 dígitos.</p>
+                )}
               </div>
               <div>
                 <label className="block text-gray-700 text-sm mb-1 font-medium">Telefone</label>
                 <input
-                  className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                   value={maskTelefone(values.telefone)}
                   onChange={e => onChange('telefone', maskTelefone(e.target.value))}
                   placeholder="(99) 9999-9999"
@@ -106,18 +129,18 @@ const EditarContatoEmergenciaModal: React.FC<EditarContatoEmergenciaModalProps> 
                 />
               </div>
             </div>
-            <div className="mb-2">
+            <div className="mt-4">
               <label className="block text-gray-700 text-sm mb-1 font-medium">E-mail</label>
               <input
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                 value={values.email}
                 onChange={e => onChange('email', e.target.value)}
-                placeholder="Digite"
+                placeholder="Digite o e-mail"
               />
             </div>
           </div>
-
-        </form>
+        </div>
+      </form>
     </GenericEditModal>
   );
 };

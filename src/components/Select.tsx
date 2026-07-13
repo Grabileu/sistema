@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 
 export interface SelectOption {
   label: string
   value: string | number
+  secondaryLabel?: string
 }
 
 interface SelectProps {
@@ -35,8 +36,7 @@ const Select: React.FC<SelectProps> = ({
   const [open, setOpen] = useState(false)
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const [search, setSearch] = useState('')
-  const [openUpward, setOpenUpward] = useState(false)
-  const [menuMaxHeight, setMenuMaxHeight] = useState(256)
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({})
   const containerRef = useRef<HTMLDivElement>(null)
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null)
 
@@ -50,13 +50,22 @@ const Select: React.FC<SelectProps> = ({
     const preferredHeight = 256
 
     const spaceBelow = viewportHeight - rect.bottom - margin
-    const spaceAbove = rect.top - margin
-    const shouldOpenUpward = spaceBelow < preferredHeight && spaceAbove > spaceBelow
-    const availableSpace = shouldOpenUpward ? spaceAbove : spaceBelow
-    const safeMaxHeight = Math.max(120, Math.min(320, Math.floor(availableSpace)))
+    const safeMaxHeight = Math.max(100, Math.min(preferredHeight, Math.floor(spaceBelow)))
 
-    setOpenUpward(shouldOpenUpward)
-    setMenuMaxHeight(safeMaxHeight)
+    const style: React.CSSProperties = {
+      position: 'fixed',
+      left: rect.left,
+      width: rect.width,
+      top: rect.bottom + margin,
+      maxHeight: safeMaxHeight,
+      overflowY: 'auto',
+      backgroundColor: 'white',
+      borderRadius: 16,
+      zIndex: 9999,
+      boxShadow: '0 10px 30px rgba(15, 23, 42, 0.12)'
+    }
+
+    setMenuStyle(style)
   }
 
   const selectedIndex = options.findIndex((option) => option.value === value)
@@ -90,7 +99,7 @@ const Select: React.FC<SelectProps> = ({
     setHighlightedIndex(options.length > 0 ? 0 : -1)
   }, [open, selectedIndex, options.length])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return
 
     updateMenuViewportPosition()
@@ -215,14 +224,21 @@ const Select: React.FC<SelectProps> = ({
         onKeyDown={handleButtonKeyDown}
         className={`w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 shadow-sm flex items-center justify-between focus:outline-none focus:border-blue-300 focus:bg-white focus:ring-2 focus:ring-blue-100 ${buttonClassName}`}
       >
-        <span className={selectedOption ? 'text-slate-700' : 'text-slate-500'}>{displayLabel}</span>
-        <ChevronDown size={16} className={`text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <span className={`flex min-w-0 items-center gap-1 ${selectedOption ? 'text-slate-700' : 'text-slate-500'}`}>
+          <span className="truncate">{displayLabel}</span>
+          {selectedOption?.secondaryLabel ? (
+            <span className="shrink-0 truncate text-[10px] leading-none text-slate-400/70">
+              {selectedOption.secondaryLabel}
+            </span>
+          ) : null}
+        </span>
+        <ChevronDown size={16} className={`ml-2 shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
         <div
-          className={`absolute left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg z-20 overflow-auto ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'} ${menuClassName}`}
-          style={{ maxHeight: `${menuMaxHeight}px` }}
+          className={`bg-white border border-slate-200 rounded-xl ${menuClassName}`}
+          style={menuStyle}
         >
           {showSearchBar && options.length > 15 && (
             <div className="sticky top-0 z-10 border-b border-slate-100 bg-white p-2">
@@ -247,7 +263,14 @@ const Select: React.FC<SelectProps> = ({
                 onMouseEnter={() => setHighlightedIndex(options.indexOf(option))}
                 className={`w-full px-3 py-2 text-left text-sm ${highlightedIndex === options.indexOf(option) ? 'bg-slate-100' : 'hover:bg-slate-50'} ${option.value === value ? 'text-slate-900' : 'text-slate-700'}`}
               >
-                {option.label}
+                <span className="flex min-w-0 items-center gap-1">
+                  <span className="truncate">{option.label}</span>
+                  {option.secondaryLabel ? (
+                    <span className="shrink-0 truncate text-[10px] leading-none text-slate-400/70">
+                      {option.secondaryLabel}
+                    </span>
+                  ) : null}
+                </span>
               </button>
             ))
           )}

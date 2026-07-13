@@ -191,7 +191,7 @@ const Birthdays: React.FC<BirthdaysProps> = ({ employees }) => {
                                 {employee.nomeCompleto.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
                               </div>
                               <div>
-                                <div className="font-semibold text-indigo-700 hover:underline cursor-pointer"># {employee.nomeCompleto}</div>
+                                <div className="font-semibold text-indigo-700 hover:underline cursor-pointer">{employee.nomeCompleto}</div>
                                 <div className="text-xs text-gray-500">{employee.cargo || '-'}</div>
                               </div>
                             </div>
@@ -213,7 +213,7 @@ const Birthdays: React.FC<BirthdaysProps> = ({ employees }) => {
                 <span>Aniversariantes de trabalho</span>
               </div>
               <p className="text-sm text-gray-500 mt-1">
-                Quem está completando mais um ano trabalhando na empresa
+                Funcionários admitidos no mesmo mês, mostrando dia e mês de admissão
               </p>
             </div>
 
@@ -265,12 +265,8 @@ const Birthdays: React.FC<BirthdaysProps> = ({ employees }) => {
                   <tbody className="text-gray-700">
                     {workAnniversaries.length === 0 ? (
                       <tr>
-                        <td colSpan={2} className="py-10 text-center text-gray-500">
-                          <div className="flex flex-col items-center justify-center">
-                            <img src="https://marq-assets.s3.sa-east-1.amazonaws.com/empty-state.svg" alt="Nenhum dado" className="w-40 mb-2 opacity-80" />
-                            <div className="font-bold text-lg text-gray-700 mb-1">Nenhum dado para visualização aqui</div>
-                            <div className="text-xs text-gray-500">Caso esteja realizando alguma pesquisa, verifique os dados preenchidos e tente novamente.</div>
-                          </div>
+                        <td colSpan={2} className="py-6 text-center text-gray-500">
+                          Nenhum aniversariante encontrado
                         </td>
                       </tr>
                     ) : (
@@ -286,7 +282,7 @@ const Birthdays: React.FC<BirthdaysProps> = ({ employees }) => {
                                 {employee.nomeCompleto.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
                               </div>
                               <div>
-                                <div className="font-semibold text-indigo-700 hover:underline cursor-pointer"># {employee.nomeCompleto}</div>
+                                <div className="font-semibold text-indigo-700 hover:underline cursor-pointer">{employee.nomeCompleto}</div>
                                 <div className="text-xs text-gray-500">{employee.cargo || '-'}</div>
                               </div>
                             </div>

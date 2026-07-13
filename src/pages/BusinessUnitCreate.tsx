@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import Select from '../components/Select'
 import { formatCNPJ, formatCEP, formatPhone } from '../utils/formatters'
 
 interface BusinessUnitCreateProps {
@@ -134,238 +133,233 @@ const BusinessUnitCreate: React.FC<BusinessUnitCreateProps> = ({
 
       <div className="container mx-auto px-6 py-6">
         <div className="bg-white shadow rounded-lg p-8">
-          {/* Primeira linha */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div>
-              <label className="block text-gray-700 text-sm mb-2">
-                Nome <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Digite"
-                value={formData.nomeUnidade}
-                onChange={(e) => {
-                  setFormData({ ...formData, nomeUnidade: e.target.value })
-                  setErrors({ ...errors, nomeUnidade: false })
-                }}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
-              />
-              {errors.nomeUnidade && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Empresa</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-700 text-sm mb-2">
+                    Razão social <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Digite"
+                    value={formData.razaoSocial}
+                    onChange={(e) => {
+                      setFormData({ ...formData, razaoSocial: e.target.value })
+                      setErrors({ ...errors, razaoSocial: false })
+                    }}
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
+                  />
+                  {errors.razaoSocial && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 text-sm mb-2">
+                    Nome da loja <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Digite"
+                    value={formData.nomeUnidade}
+                    onChange={(e) => {
+                      setFormData({ ...formData, nomeUnidade: e.target.value })
+                      setErrors({ ...errors, nomeUnidade: false })
+                    }}
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
+                  />
+                  {errors.nomeUnidade && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 text-sm mb-2">
+                    CNPJ <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Digite"
+                    value={formData.cnpj}
+                    onChange={handleCnpjChange}
+                    maxLength={18}
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
+                  />
+                  {errors.cnpj && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 text-sm mb-2">Inscrição estadual</label>
+                  <input
+                    type="text"
+                    placeholder="Digite"
+                    value={formData.inscricaoEstadual}
+                    onChange={(e) => setFormData({ ...formData, inscricaoEstadual: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 text-sm mb-2">Inscrição municipal</label>
+                  <input
+                    type="text"
+                    placeholder="Digite"
+                    value={formData.inscricaoMunicipal}
+                    onChange={(e) => setFormData({ ...formData, inscricaoMunicipal: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 text-sm mb-2">Ramo de atividade</label>
+                  <input
+                    type="text"
+                    placeholder="Digite"
+                    value={formData.ramoAtividade}
+                    onChange={(e) => setFormData({ ...formData, ramoAtividade: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
+                  />
+                </div>
+              </div>
             </div>
 
             <div>
-              <label className="block text-gray-700 text-sm mb-2">
-                Telefone <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Digite"
-                value={formData.telefone}
-                onChange={handlePhoneChange}
-                maxLength={15}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
-              />
-              {errors.telefone && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
-            </div>
-          </div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Contato</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-700 text-sm mb-2">
+                    Telefone <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Digite"
+                    value={formData.telefone}
+                    onChange={handlePhoneChange}
+                    maxLength={15}
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
+                  />
+                  {errors.telefone && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
+                </div>
 
-          {/* Segunda linha */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <label className="block text-gray-700 text-sm mb-2">
-                Razão Social <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Digite"
-                value={formData.razaoSocial}
-                onChange={(e) => {
-                  setFormData({ ...formData, razaoSocial: e.target.value })
-                  setErrors({ ...errors, razaoSocial: false })
-                }}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
-              />
-              {errors.razaoSocial && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
-            </div>
+                <div>
+                  <label className="block text-gray-700 text-sm mb-2">
+                    CEP <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Digite"
+                    value={formData.cep}
+                    onChange={handleCepChange}
+                    maxLength={9}
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
+                  />
+                  {errors.cep && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
+                </div>
 
-            <div>
-              <label className="block text-gray-700 text-sm mb-2">
-                CNPJ <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Digite"
-                value={formData.cnpj}
-                onChange={handleCnpjChange}
-                maxLength={18}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
-              />
-              {errors.cnpj && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
-            </div>
-          </div>
+                <div>
+                  <label className="block text-gray-700 text-sm mb-2">
+                    Endereço <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Digite"
+                    value={formData.endereco}
+                    onChange={(e) => {
+                      setFormData({ ...formData, endereco: e.target.value })
+                      setErrors({ ...errors, endereco: false })
+                    }}
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
+                  />
+                  {errors.endereco && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
+                </div>
 
-          {/* Terceira linha */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <label className="block text-gray-700 text-sm mb-2">Inscrição Estadual</label>
-              <input
-                type="text"
-                placeholder="Digite"
-                value={formData.inscricaoEstadual}
-                onChange={(e) => setFormData({ ...formData, inscricaoEstadual: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
-              />
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-gray-700 text-sm mb-2">
+                      Número <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Digite"
+                      value={formData.numero}
+                      onChange={(e) => {
+                        setFormData({ ...formData, numero: e.target.value })
+                        setErrors({ ...errors, numero: false })
+                      }}
+                      className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
+                    />
+                    {errors.numero && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
+                  </div>
 
-            <div>
-              <label className="block text-gray-700 text-sm mb-2">Inscrição Municipal</label>
-              <input
-                type="text"
-                placeholder="Digite"
-                value={formData.inscricaoMunicipal}
-                onChange={(e) => setFormData({ ...formData, inscricaoMunicipal: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
-              />
-            </div>
-          </div>
+                  <div>
+                    <label className="block text-gray-700 text-sm mb-2">Complemento</label>
+                    <input
+                      type="text"
+                      placeholder="Digite"
+                      value={formData.complemento}
+                      onChange={(e) => setFormData({ ...formData, complemento: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
+                    />
+                  </div>
+                </div>
 
-          {/* Quarta linha */}
-          <div className="grid grid-cols-1 mb-6">
-            <div>
-              <label className="block text-gray-700 text-sm mb-2">Ramo de atividade</label>
-              <input
-                type="text"
-                placeholder="Digite"
-                value={formData.ramoAtividade}
-                onChange={(e) => setFormData({ ...formData, ramoAtividade: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
-              />
-            </div>
-          </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-gray-700 text-sm mb-2">
+                      Bairro <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Digite"
+                      value={formData.bairro}
+                      onChange={(e) => {
+                        setFormData({ ...formData, bairro: e.target.value })
+                        setErrors({ ...errors, bairro: false })
+                      }}
+                      className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
+                    />
+                    {errors.bairro && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
+                  </div>
 
-          {/* CEP e Endereço */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <label className="block text-gray-700 text-sm mb-2">
-                CEP <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Digite"
-                value={formData.cep}
-                onChange={handleCepChange}
-                maxLength={9}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
-              />
-              {errors.cep && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
-            </div>
-          </div>
+                  <div>
+                    <label className="block text-gray-700 text-sm mb-2">
+                      Estado <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Digite"
+                      value={formData.estado}
+                      onChange={(e) => {
+                        setFormData({ ...formData, estado: e.target.value })
+                        setErrors({ ...errors, estado: false })
+                      }}
+                      maxLength={2}
+                      className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
+                    />
+                    {errors.estado && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
+                  </div>
 
-          {/* Endereço, Número e Complemento */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div>
-              <label className="block text-gray-700 text-sm mb-2">
-                Endereço <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Digite"
-                value={formData.endereco}
-                onChange={(e) => {
-                  setFormData({ ...formData, endereco: e.target.value })
-                  setErrors({ ...errors, endereco: false })
-                }}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
-              />
-              {errors.endereco && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
-            </div>
-
-            <div>
-              <label className="block text-gray-700 text-sm mb-2">
-                Número <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Digite"
-                value={formData.numero}
-                onChange={(e) => {
-                  setFormData({ ...formData, numero: e.target.value })
-                  setErrors({ ...errors, numero: false })
-                }}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
-              />
-              {errors.numero && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
-            </div>
-
-            <div>
-              <label className="block text-gray-700 text-sm mb-2">Complemento</label>
-              <input
-                type="text"
-                placeholder="Digite"
-                value={formData.complemento}
-                onChange={(e) => setFormData({ ...formData, complemento: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
-              />
-            </div>
-          </div>
-
-          {/* Bairro, Estado e Cidade */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div>
-              <label className="block text-gray-700 text-sm mb-2">
-                Bairro <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Digite"
-                value={formData.bairro}
-                onChange={(e) => {
-                  setFormData({ ...formData, bairro: e.target.value })
-                  setErrors({ ...errors, bairro: false })
-                }}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
-              />
-              {errors.bairro && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
-            </div>
-
-            <div>
-              <label className="block text-gray-700 text-sm mb-2">
-                Estado <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Digite"
-                value={formData.estado}
-                onChange={(e) => {
-                  setFormData({ ...formData, estado: e.target.value })
-                  setErrors({ ...errors, estado: false })
-                }}
-                maxLength={2}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
-              />
-              {errors.estado && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
-            </div>
-
-            <div>
-              <label className="block text-gray-700 text-sm mb-2">
-                Cidade <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Digite"
-                value={formData.cidade}
-                onChange={(e) => {
-                  setFormData({ ...formData, cidade: e.target.value })
-                  setErrors({ ...errors, cidade: false })
-                }}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
-              />
-              {errors.cidade && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
+                  <div>
+                    <label className="block text-gray-700 text-sm mb-2">
+                      Cidade <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Digite"
+                      value={formData.cidade}
+                      onChange={(e) => {
+                        setFormData({ ...formData, cidade: e.target.value })
+                        setErrors({ ...errors, cidade: false })
+                      }}
+                      className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded text-gray-900 placeholder-gray-500"
+                    />
+                    {errors.cidade && <p className="text-red-500 text-xs mt-1">Este campo é obrigatório</p>}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Observação */}
-          <div className="mb-6">
+          <div className="mt-8 mb-6">
             <label className="block text-gray-700 text-sm mb-2">Observação</label>
             <textarea
               placeholder="Digite"

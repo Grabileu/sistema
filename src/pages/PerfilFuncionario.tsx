@@ -105,11 +105,13 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
   const [dependentes, setDependentes] = useLocalStorageState<Dependente[]>('dependentes', []);
   const [editIndexDependente, setEditIndexDependente] = useState<number | null>(null);
   const [showListaDependentes, setShowListaDependentes] = useState(false);
+  const [returnToListaDependentesOnCancel, setReturnToListaDependentesOnCancel] = useState(false);
 
   // Editar dependente existente
   const handleEditDependente = (idx: number) => {
     setEditDependente(dependentes[idx]);
     setEditIndexDependente(idx);
+    setReturnToListaDependentesOnCancel(true);
     setShowEditDependente(true);
   };
   // Remover dependente
@@ -377,6 +379,7 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
   const [showEditContatoEmergencia, setShowEditContatoEmergencia] = useState(false);
   // Lista de contatos de emergência
   const [contatosEmergencia, setContatosEmergencia] = useLocalStorageState<ContatoEmergencia[]>('contatosEmergencia', []);
+  const [returnToListaContatosEmergenciaOnCancel, setReturnToListaContatosEmergenciaOnCancel] = useState(false);
   // Estado para edição/adicionar contato
   const [editContatoEmergencia, setEditContatoEmergencia] = useState({
     nome: '',
@@ -403,6 +406,7 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
   const handleEditarContatoIndividual = (idx: number) => {
     setEditContatoEmergencia(contatosEmergencia[idx]);
     setEditIndexContatoEmergencia(idx);
+    setReturnToListaContatosEmergenciaOnCancel(true);
     setShowEditContatoEmergencia(true);
   };
   // Remover contato individual da lista
@@ -550,9 +554,18 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
             <div className="mb-2">Equipe: <span className="text-indigo-700 font-medium cursor-pointer hover:underline">{funcionarioView.equipe}</span></div>
             <div className="pl-4 text-xs text-indigo-700 cursor-pointer hover:underline mb-2">Histórico de alteração</div>
             <div className="mb-2">Departamento: <span className="text-indigo-700 font-medium cursor-pointer hover:underline">{departamento}</span></div>
-            <div className="mb-2">Unidade de negócio: <span className="text-indigo-700 font-medium cursor-pointer hover:underline">{unidade}</span></div>
+            <div className="mb-2">Loja: <span className="text-indigo-700 font-medium cursor-pointer hover:underline">{unidade}</span></div>
             <div className="mb-2">Perfil criado em: <span className="text-gray-900 font-medium">{perfilCriado}</span></div>
-            <div className="mb-2">Último acesso: <span className="text-gray-900 font-medium">{ultimoAcesso}</span> <span className="text-xs text-gray-400 ml-1">ⓘ</span></div>
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <span className="text-gray-700">Último acesso:</span>
+              <span className="text-gray-900 font-medium">{ultimoAcesso}</span>
+              <div className="relative inline-flex group">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 bg-slate-100 text-[10px] font-semibold text-slate-600">i</span>
+                <div className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 w-64 -translate-x-1/2 rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-100 opacity-0 shadow-xl transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0">
+                  Último login registrado no sistema. Atualiza sempre que o colaborador acessa a plataforma.
+                </div>
+              </div>
+            </div>
             <div className="mb-2">ID interno: <span className="text-gray-400 text-xs">{idInterno}</span></div>
           </div>
         </div>
@@ -605,6 +618,7 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
                             title="Confirmar demissão"
                             description="Tem certeza que deseja demitir este funcionário? Esta ação não pode ser desfeita."
                             itemName={funcionarioView.nomeCompleto}
+                            confirmButtonText="Demitir"
                             onCancel={() => setShowDismissModal(false)}
                             onConfirm={() => {
                               setShowDismissModal(false);
@@ -721,68 +735,101 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
               open={showEditContatoEmergencia}
               values={editContatoEmergencia}
               onChange={handleEditContatoEmergenciaChange}
-              onClose={() => setShowEditContatoEmergencia(false)}
-              onSubmit={handleEditContatoEmergenciaSubmit}
+              onClose={() => {
+                setShowEditContatoEmergencia(false);
+                if (returnToListaContatosEmergenciaOnCancel) {
+                  setShowListaContatosEmergencia(true);
+                  setReturnToListaContatosEmergenciaOnCancel(false);
+                }
+              }}
+              onSubmit={() => {
+                handleEditContatoEmergenciaSubmit();
+                setReturnToListaContatosEmergenciaOnCancel(false);
+              }}
               RemoverBotao={editIndexContatoEmergencia !== null}
               onRemover={handleRemoverContatoEmergencia}
             />
             {/* Modal para listar e editar/remover todos os contatos */}
             {showListaContatosEmergencia && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-                <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-8 relative animate-fade-in">
-                  <button
-                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold"
-                    onClick={() => setShowListaContatosEmergencia(false)}
-                    aria-label="Fechar"
-                  >×</button>
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">Editar contatos de emergência</h2>
-                  {contatosEmergencia.length === 0 ? (
-                    <div className="text-xs text-gray-500 mb-4">Nenhum contato de emergência cadastrado.</div>
-                  ) : (
-                    <div className="space-y-4 mb-4">
-                      {contatosEmergencia.map((contato, idx) => (
-                        <div key={idx} className="border-b pb-3 flex items-center justify-between">
-                          <div>
-                            <div className="font-bold text-gray-700 mb-1">Contato {idx + 1}</div>
-                            <div className="text-xs text-gray-700">
-                              <span className="font-medium">Nome:</span> {contato.nome || '-'}<br />
-                              <span className="font-medium">Relação:</span> {contato.relacao || '-'}<br />
-                              <span className="font-medium">Celular:</span> {contato.celular || '-'}<br />
-                              <span className="font-medium">Telefone:</span> {contato.telefone || '-'}<br />
-                              <span className="font-medium">E-mail:</span> {contato.email || '-'}
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 py-6">
+                <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+                  <div className="flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-50 px-6 py-4">
+                    <div>
+                      <h2 className="text-lg font-semibold text-slate-900">Contatos de emergência</h2>
+                      <p className="text-sm text-slate-500">Visualize, edite ou remova contatos prioritários.</p>
+                    </div>
+                    <button
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                      onClick={() => setShowListaContatosEmergencia(false)}
+                      aria-label="Fechar"
+                    >×</button>
+                  </div>
+                  <div className="max-h-[70vh] overflow-y-auto px-6 py-5 space-y-4">
+                    {contatosEmergencia.length === 0 ? (
+                      <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+                        Nenhum contato de emergência cadastrado.
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {contatosEmergencia.map((contato, idx) => (
+                          <div key={idx} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                              <div>
+                                <div className="text-sm font-semibold text-slate-900">Contato {idx + 1}</div>
+                                <p className="text-xs text-slate-500">Mantenha as informações atualizadas para acionamento ágil.</p>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
+                                  onClick={() => { handleEditarContatoIndividual(idx); setShowListaContatosEmergencia(false); }}
+                                  title={`Editar contato ${idx + 1}`}
+                                >
+                                  Editar
+                                </button>
+                                <button
+                                  className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+                                  onClick={() => handleRemoverContatoIndividual(idx)}
+                                  title={`Remover contato ${idx + 1}`}
+                                >
+                                  Remover
+                                </button>
+                              </div>
+                            </div>
+                            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                              <div className="rounded-2xl bg-slate-50 p-3 text-sm">
+                                <div className="text-xs text-slate-500">Nome</div>
+                                <div className="font-medium text-slate-900">{contato.nome || '-'}</div>
+                              </div>
+                              <div className="rounded-2xl bg-slate-50 p-3 text-sm">
+                                <div className="text-xs text-slate-500">Relação</div>
+                                <div className="font-medium text-slate-900">{contato.relacao || '-'}</div>
+                              </div>
+                              <div className="rounded-2xl bg-slate-50 p-3 text-sm">
+                                <div className="text-xs text-slate-500">Celular</div>
+                                <div className="font-medium text-slate-900">{contato.celular || '-'}</div>
+                              </div>
+                              <div className="rounded-2xl bg-slate-50 p-3 text-sm">
+                                <div className="text-xs text-slate-500">Telefone</div>
+                                <div className="font-medium text-slate-900">{contato.telefone || '-'}</div>
+                              </div>
+                              <div className="rounded-2xl bg-slate-50 p-3 text-sm sm:col-span-2">
+                                <div className="text-xs text-slate-500">E-mail</div>
+                                <div className="font-medium text-slate-900">{contato.email || '-'}</div>
+                              </div>
                             </div>
                           </div>
-                          <div className="flex gap-2">
-                            <button
-                              className="flex items-center gap-1 text-indigo-700 hover:underline text-xs"
-                              onClick={() => { handleEditarContatoIndividual(idx); setShowListaContatosEmergencia(false); }}
-                              title={`Editar contato ${idx + 1}`}
-                            >
-                              <svg xmlns='http://www.w3.org/2000/svg' className='inline-block' width='14' height='14' fill='none' viewBox='0 0 24 24'><path stroke='currentColor' strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2m2-2v8m0 0 2-2m-2 2-2-2'/></svg>
-                              Editar
-                            </button>
-                            <button
-                              className="flex items-center gap-1 text-red-500 hover:underline text-xs"
-                              onClick={() => handleRemoverContatoIndividual(idx)}
-                              title={`Remover contato ${idx + 1}`}
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                              Remover
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <button
-                    className="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-indigo-700 font-medium py-2 rounded transition text-xs mt-2"
-                    onClick={() => { setShowListaContatosEmergencia(false); handleOpenNovoContatoEmergencia(); }}
-                  >
-                    <svg xmlns='http://www.w3.org/2000/svg' className='inline-block' width='16' height='16' fill='none' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' stroke='currentColor' strokeWidth='2'/><path stroke='currentColor' strokeWidth='2' strokeLinecap='round' d='M12 8v8m-4-4h8'/></svg>
-                    Novo contato de emergência
-                  </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="border-t border-slate-200 bg-slate-50 px-6 py-4">
+                    <button
+                      className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50"
+                      onClick={() => { setShowListaContatosEmergencia(false); setReturnToListaContatosEmergenciaOnCancel(true); handleOpenNovoContatoEmergencia(); }}
+                    >
+                      + Novo contato de emergência
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -1005,7 +1052,13 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
             open={showEditDependente}
             values={editDependente}
             onChange={(field, value) => setEditDependente(prev => ({ ...prev, [field]: value }))}
-            onClose={() => setShowEditDependente(false)}
+            onClose={() => {
+              setShowEditDependente(false);
+              if (returnToListaDependentesOnCancel) {
+                setShowListaDependentes(true);
+                setReturnToListaDependentesOnCancel(false);
+              }
+            }}
             onSubmit={() => {
               if (editIndexDependente === null) {
                 setDependentes(prev => [...prev, editDependente]);
@@ -1014,6 +1067,7 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
               }
               setShowEditDependente(false);
               setEditIndexDependente(null);
+              setReturnToListaDependentesOnCancel(false);
             }}
             RemoverBotao={editIndexDependente !== null}
             onRemover={() => {
@@ -1027,64 +1081,97 @@ export default function PerfilFuncionario({ funcionario, onUpdateEmployee, onDis
           />
           {/* Modal de edição em lista, igual contatos de emergência */}
           {showListaDependentes && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-              <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-8 relative animate-fade-in">
-                <button
-                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold"
-                  onClick={() => setShowListaDependentes(false)}
-                  aria-label="Fechar"
-                >×</button>
-                <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">Editar dependentes</h2>
-                {dependentes.length === 0 ? (
-                  <div className="text-xs text-gray-500 mb-4">Nenhum dependente cadastrado.</div>
-                ) : (
-                  <div className="space-y-4 mb-4">
-                    {dependentes.map((dep, idx) => (
-                      <div key={idx} className="border-b pb-3 flex items-center justify-between">
-                        <div>
-                          <div className="font-bold text-gray-700 mb-1">Dependente {idx + 1}</div>
-                          <div className="text-xs text-gray-700">
-                            <span className="font-medium">Nome:</span> {dep.nome || '-'}<br />
-                            <span className="font-medium">Relação:</span> {dep.relacao || '-'}<br />
-                            <span className="font-medium">Data de nascimento:</span> {dep.dataNascimento || '-'}<br />
-                            <span className="font-medium">Nome da mãe:</span> {dep.nomeMae || '-'}<br />
-                            <span className="font-medium">CPF:</span> {dep.cpf || '-'}<br />
-                            <span className="font-medium">Telefone:</span> {dep.telefone || '-'}<br />
-                            <span className="font-medium">E-mail:</span> {dep.email || '-'}<br />
-                            <span className="font-medium">Observações:</span> {dep.observacoes || '-'}
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 py-6">
+              <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+                <div className="flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-50 px-6 py-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-slate-900">Editar dependentes</h2>
+                    <p className="text-sm text-slate-500">Visualize, edite ou remova dependentes cadastrados.</p>
+                  </div>
+                  <button
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                    onClick={() => setShowListaDependentes(false)}
+                    aria-label="Fechar"
+                  >×</button>
+                </div>
+                <div className="max-h-[70vh] overflow-y-auto px-6 py-5 space-y-4">
+                  {dependentes.length === 0 ? (
+                    <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+                      Nenhum dependente cadastrado.
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {dependentes.map((dep, idx) => (
+                        <div key={idx} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                            <div>
+                              <div className="text-sm font-semibold text-slate-900">Dependente {idx + 1}</div>
+                              <p className="text-xs text-slate-500">Verifique os dados antes de editar ou remover.</p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
+                                onClick={() => { handleEditDependente(idx); setShowListaDependentes(false); }}
+                                title={`Editar dependente ${idx + 1}`}
+                              >
+                                Editar
+                              </button>
+                              <button
+                                className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+                                onClick={() => handleRemoveDependente(idx)}
+                                title={`Remover dependente ${idx + 1}`}
+                              >
+                                Remover
+                              </button>
+                            </div>
+                          </div>
+                          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div className="rounded-2xl bg-slate-50 p-3 text-sm">
+                              <div className="text-xs text-slate-500">Nome</div>
+                              <div className="font-medium text-slate-900">{dep.nome || '-'}</div>
+                            </div>
+                            <div className="rounded-2xl bg-slate-50 p-3 text-sm">
+                              <div className="text-xs text-slate-500">Relação</div>
+                              <div className="font-medium text-slate-900">{dep.relacao || '-'}</div>
+                            </div>
+                            <div className="rounded-2xl bg-slate-50 p-3 text-sm">
+                              <div className="text-xs text-slate-500">Data de nascimento</div>
+                              <div className="font-medium text-slate-900">{dep.dataNascimento || '-'}</div>
+                            </div>
+                            <div className="rounded-2xl bg-slate-50 p-3 text-sm">
+                              <div className="text-xs text-slate-500">Nome da mãe</div>
+                              <div className="font-medium text-slate-900">{dep.nomeMae || '-'}</div>
+                            </div>
+                            <div className="rounded-2xl bg-slate-50 p-3 text-sm">
+                              <div className="text-xs text-slate-500">CPF</div>
+                              <div className="font-medium text-slate-900">{dep.cpf || '-'}</div>
+                            </div>
+                            <div className="rounded-2xl bg-slate-50 p-3 text-sm">
+                              <div className="text-xs text-slate-500">Telefone</div>
+                              <div className="font-medium text-slate-900">{dep.telefone || '-'}</div>
+                            </div>
+                            <div className="rounded-2xl bg-slate-50 p-3 text-sm sm:col-span-2">
+                              <div className="text-xs text-slate-500">E-mail</div>
+                              <div className="font-medium text-slate-900">{dep.email || '-'}</div>
+                            </div>
+                            <div className="rounded-2xl bg-slate-50 p-3 text-sm sm:col-span-2">
+                              <div className="text-xs text-slate-500">Observações</div>
+                              <div className="font-medium text-slate-900">{dep.observacoes || '-'}</div>
+                            </div>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <button
-                            className="flex items-center gap-1 text-indigo-700 hover:underline text-xs"
-                            onClick={() => { handleEditDependente(idx); setShowListaDependentes(false); }}
-                            title={`Editar dependente ${idx + 1}`}
-                          >
-                            <svg xmlns='http://www.w3.org/2000/svg' className='inline-block' width='14' height='14' fill='none' viewBox='0 0 24 24'><path stroke='currentColor' strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2m2-2v8m0 0 2-2m-2 2-2-2'/></svg>
-                            Editar
-                          </button>
-                          <button
-                            className="flex items-center gap-1 text-red-500 hover:underline text-xs"
-                            onClick={() => handleRemoveDependente(idx)}
-                            title={`Remover dependente ${idx + 1}`}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                            Remover
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <button
-                  className="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-indigo-700 font-medium py-2 rounded transition text-xs mt-2"
-                  onClick={() => { setShowListaDependentes(false); setEditDependente({ nome: '', relacao: '', dataNascimento: '', nomeMae: '', cpf: '', telefone: '', email: '', observacoes: '' }); setEditIndexDependente(null); setShowEditDependente(true); }}
-                >
-                  <svg xmlns='http://www.w3.org/2000/svg' className='inline-block' width='16' height='16' fill='none' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' stroke='currentColor' strokeWidth='2'/><path stroke='currentColor' strokeWidth='2' strokeLinecap='round' d='M12 8v8m-4-4h8'/></svg>
-                  Novo dependente
-                </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="border-t border-slate-200 bg-slate-50 px-6 py-4">
+                  <button
+                    className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50"
+                    onClick={() => { setShowListaDependentes(false); setReturnToListaDependentesOnCancel(true); setEditDependente({ nome: '', relacao: '', dataNascimento: '', nomeMae: '', cpf: '', telefone: '', email: '', observacoes: '' }); setEditIndexDependente(null); setShowEditDependente(true); }}
+                  >
+                    + Novo dependente
+                  </button>
+                </div>
               </div>
             </div>
           )}

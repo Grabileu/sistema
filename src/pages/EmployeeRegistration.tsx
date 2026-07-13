@@ -344,6 +344,7 @@ const EmployeeRegistration: React.FC<EmployeeRegistrationProps> = ({
         loja: formData.loja
       };
       onUpdateEmployee(updatedEmployee);
+      onNavigate?.('funcionarios-ativos');
     } else if (onAddEmployee) {
       // Criar novo funcionário
       const newEmployee: Employee = {

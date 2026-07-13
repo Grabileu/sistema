@@ -174,33 +174,54 @@ export const parseDateString = (value: string): Date | null => {
 // Opções de seleção reutilizáveis
 // ---------------------------------------------------------------------------
 
-/** Gera as opções de loja para um <Select>, com a unidade principal em destaque. */
+const formatStoreLabel = (storeName: string, cnpj?: string) => {
+  const trimmedName = String(storeName || '').trim()
+  if (!trimmedName) {
+    return { primaryLabel: trimmedName, secondaryLabel: '' }
+  }
+
+  const normalizedCnpj = String(cnpj || '').trim()
+  if (!normalizedCnpj) {
+    return { primaryLabel: trimmedName, secondaryLabel: '' }
+  }
+
+  const digitsOnly = normalizedCnpj.replace(/\D/g, '')
+  const formattedCnpj = digitsOnly.length === 14 ? formatCNPJ(normalizedCnpj) : normalizedCnpj
+
+  return { primaryLabel: trimmedName, secondaryLabel: formattedCnpj.toUpperCase() }
+}
+
+/** Gera as opções de loja para um <Select>, sem o sufixo principal e com o CNPJ em texto secundário. */
 export const buildStoreOptions = (
-  businessUnits: Array<{ nomeUnidade?: string; nome?: string; unidadePrincipal?: boolean }>,
-  companyData: { nomeEmpresa?: string; razaoSocial?: string } | null | undefined,
+  businessUnits: Array<{ nomeUnidade?: string; nome?: string; unidadePrincipal?: boolean; cnpj?: string }>,
+  companyData: { nomeEmpresa?: string; razaoSocial?: string; cnpj?: string } | null | undefined,
   firstLabel = 'Todas'
-): Array<{ label: string; value: string }> => {
+): Array<{ label: string; value: string; secondaryLabel?: string }> => {
   const principalUnit = businessUnits.find((unit) => unit.unidadePrincipal)
   const principalStoreName = principalUnit
     ? principalUnit.nomeUnidade || principalUnit.nome || ''
     : companyData?.nomeEmpresa || companyData?.razaoSocial || ''
 
-  const allStoreNames = new Set<string>()
+  const allStoreNames = new Map<string, string | undefined>()
   businessUnits.forEach((unit) => {
     const storeName = unit.nomeUnidade || unit.nome || ''
-    if (storeName) allStoreNames.add(storeName)
+    if (storeName) allStoreNames.set(storeName, unit.cnpj)
   })
 
-  const options: Array<{ label: string; value: string }> = [{ label: firstLabel, value: '' }]
+  const options: Array<{ label: string; value: string; secondaryLabel?: string }> = [{ label: firstLabel, value: '' }]
 
   if (principalStoreName) {
-    options.push({ label: `${principalStoreName} (Principal)`, value: principalStoreName })
+    const { primaryLabel, secondaryLabel } = formatStoreLabel(principalStoreName, principalUnit?.cnpj || companyData?.cnpj)
+    options.push({ label: primaryLabel, value: principalStoreName, secondaryLabel })
     allStoreNames.delete(principalStoreName)
   }
 
-  Array.from(allStoreNames)
-    .sort((a, b) => a.localeCompare(b, 'pt-BR'))
-    .forEach((storeName) => options.push({ label: storeName, value: storeName }))
+  Array.from(allStoreNames.entries())
+    .sort(([a], [b]) => a.localeCompare(b, 'pt-BR'))
+    .forEach(([storeName, cnpj]) => {
+      const { primaryLabel, secondaryLabel } = formatStoreLabel(storeName, cnpj)
+      options.push({ label: primaryLabel, value: storeName, secondaryLabel })
+    })
 
   return options
 }

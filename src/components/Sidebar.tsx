@@ -418,12 +418,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate, canAcces
         >
           <aside
             ref={submenuPanelRef}
-            className="fixed left-80 w-72 bg-[#1e1e2e] text-white z-50 shadow-2xl rounded-2xl border border-gray-700 transition-all duration-300 max-h-[calc(100vh-2rem)] overflow-auto"
+            className="fixed left-80 w-64 bg-[#1e1e2e] text-white z-50 shadow-xl rounded-xl border border-gray-700/80 transition-all duration-300 max-h-[calc(100vh-1.5rem)] overflow-auto"
             style={{ top: submenuPanelTop }}
           >
-            <div className="p-6">
-              <h3 className="mb-3 text-lg font-bold text-white tracking-wide">{openSubmenu}</h3>
-              <div className="mb-4 border-b border-gray-700"></div>
+            <div className="p-4">
+              <h3 className="mb-2 text-base font-semibold text-white tracking-wide">{openSubmenu}</h3>
+              <div className="mb-3 border-b border-gray-700"></div>
               <div className="space-y-1">
                 {filteredMenuItems.find(item => item.label === openSubmenu)?.submenuItems?.map((subItem, subIndex) => (
                   <button
@@ -433,7 +433,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate, canAcces
                       setOpenSubmenu(null)
                       onClose()
                     }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-[#2a2a3e] hover:text-white rounded transition flex items-center gap-2 font-medium"
+                    className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-[#2a2a3e] hover:text-white rounded transition flex items-center gap-2 font-medium"
                   >
                     {subItem}
                   </button>

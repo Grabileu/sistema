@@ -1,19 +1,22 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useMemo, useState, useRef, useEffect } from 'react'
 import { MoreVertical, Edit2, Trash2 } from 'lucide-react'
-import { BusinessUnit } from '../App'
+import { BusinessUnit, Employee } from '../App'
+import DeleteConfirmModal from '../components/DeleteConfirmModal'
 import { useClickOutside } from '../hooks/useClickOutside'
 
 interface BusinessUnitsProps {
   businessUnits: BusinessUnit[]
+  employees: Employee[]
   onNavigate?: (route: string) => void
   onDeleteBusinessUnit?: (id: string) => void
   onEditBusinessUnit?: (id: string) => void
 }
 
-const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate, onDeleteBusinessUnit, onEditBusinessUnit }) => {
+const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, employees, onNavigate, onDeleteBusinessUnit, onEditBusinessUnit }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [isActionMenuUpward, setIsActionMenuUpward] = useState(false)
   const [companyData, setCompanyData] = useState<any>(null)
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Carregar dados da empresa
@@ -37,14 +40,12 @@ const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate
   }, [])
 
   // Buscar dados da empresa como loja principal
-  const getMainUnit = () => {
-    const unitoPrincipal = businessUnits.find(unit => unit.unidadePrincipal)
-    
-    // Se não houver unidade marcada como principal, usar dados da empresa
-    if (!unitoPrincipal && companyData) {
+  const getMainUnit = (): BusinessUnit | null => {
+    if (companyData && (companyData.nomeEmpresa || companyData.razaoSocial)) {
       return {
         id: 'company-main',
         nomeUnidade: companyData.nomeEmpresa || companyData.razaoSocial || 'Empresa',
+        razaoSocial: companyData.razaoSocial || companyData.nomeEmpresa || '',
         unidadePrincipal: true,
         cnpj: companyData.cnpj || '',
         telefone: companyData.telefone || '',
@@ -58,11 +59,21 @@ const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate
         criadoEm: new Date().toLocaleDateString('pt-BR')
       }
     }
-    
-    return unitoPrincipal || null
+
+    const unidadePrincipal = businessUnits.find(unit => unit.unidadePrincipal)
+    return unidadePrincipal || null
   }
 
   const mainUnit = getMainUnit()
+
+  const employeesByStore = useMemo(() => {
+    return employees.reduce<Record<string, number>>((acc, employee) => {
+      const storeName = employee.loja || ''
+      if (!storeName) return acc
+      acc[storeName] = (acc[storeName] || 0) + 1
+      return acc
+    }, {})
+  }, [employees])
 
   useClickOutside(menuRef, () => setOpenMenuId(null))
 
@@ -87,11 +98,19 @@ const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate
     setOpenMenuId(id)
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir esta loja?')) {
-      onDeleteBusinessUnit?.(id)
-      setOpenMenuId(null)
-    }
+  const handleDelete = (id: string, nomeUnidade: string) => {
+    setPendingDelete({ id, name: nomeUnidade })
+    setOpenMenuId(null)
+  }
+
+  const confirmDelete = () => {
+    if (!pendingDelete) return
+    onDeleteBusinessUnit?.(pendingDelete.id)
+    setPendingDelete(null)
+  }
+
+  const cancelDelete = () => {
+    setPendingDelete(null)
   }
 
   return (
@@ -108,6 +127,15 @@ const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate
         </div>
       </div>
 
+      {pendingDelete && (
+        <DeleteConfirmModal
+          title="Excluir loja"
+          description="Tem certeza que deseja excluir a loja abaixo?"
+          itemName={pendingDelete.name}
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+        />
+      )}
       <div className="container mx-auto px-6 py-6">
         {businessUnits.length === 0 && !mainUnit ? (
           <div className="bg-white shadow rounded-lg p-12 text-center">
@@ -123,78 +151,41 @@ const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate
           <>
             {/* Unidade Principal - Destaque */}
             {mainUnit && (
-              <div className="bg-white shadow rounded-lg p-8 mb-8 border-l-4 border-indigo-600">
-                <div className="flex items-start justify-between mb-6">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
-                        Loja Principal
-                      </span>
+              <div className="rounded-[1.5rem] bg-gradient-to-r from-slate-900 via-indigo-900 to-indigo-700 p-5 mb-8 text-white shadow-xl">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="space-y-2">
+                    <span className="inline-flex rounded-full bg-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-white/80">
+                      Loja Principal
+                    </span>
+                    <div>
+                      <h2 className="text-2xl font-semibold tracking-tight">{mainUnit.nomeUnidade}</h2>
+                      <p className="mt-1 text-sm text-white/70">{mainUnit.razaoSocial || 'Razão social não informada'}</p>
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-900">{mainUnit.nomeUnidade}</h2>
                   </div>
-                  {mainUnit.id !== 'company-main' && (
-                    <div className="relative" ref={openMenuId === mainUnit.id ? menuRef : null}>
-                      <button
-                        onClick={(event) => toggleActionMenu(mainUnit.id, event)}
-                        className="hover:bg-gray-100 p-2 rounded"
-                      >
-                        <MoreVertical size={20} />
-                      </button>
-                      
-                      {openMenuId === mainUnit.id && (
-                        <div className={`absolute right-0 w-48 max-h-[min(16rem,calc(100vh-2rem))] overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white shadow-lg z-50 ${isActionMenuUpward ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
-                          <button
-                            onClick={() => {
-                              onEditBusinessUnit?.(mainUnit.id)
-                              setOpenMenuId(null)
-                            }}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
-                          >
-                            <Edit2 size={16} />
-                            Editar
-                          </button>
-                          <button
-                            onClick={() => handleDelete(mainUnit.id)}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 rounded-b-lg"
-                          >
-                            <Trash2 size={16} />
-                            Excluir
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-1">CNPJ</p>
-                    <p className="text-lg font-semibold text-gray-900">{mainUnit.cnpj || '-'}</p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-1">Telefone</p>
-                    <p className="text-lg font-semibold text-gray-900">{mainUnit.telefone || '-'}</p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-1">CEP</p>
-                    <p className="text-lg font-semibold text-gray-900">{mainUnit.cep || '-'}</p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-1">Criada em</p>
-                    <p className="text-lg font-semibold text-gray-900">{mainUnit.criadoEm}</p>
+                  <div className="grid w-full max-w-[560px] gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="rounded-3xl bg-white/10 p-4 backdrop-blur-sm">
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-white/70">CNPJ</p>
+                      <p className="mt-2 font-semibold text-white text-sm">{mainUnit.cnpj || '-'}</p>
+                    </div>
+                    <div className="rounded-3xl bg-white/10 p-4 backdrop-blur-sm">
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-white/70">Funcionários</p>
+                      <p className="mt-2 font-semibold text-white text-sm">{employeesByStore[mainUnit.nomeUnidade] ?? 0}</p>
+                    </div>
+                    <div className="rounded-3xl bg-white/10 p-4 backdrop-blur-sm">
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-white/70">Criada em</p>
+                      <p className="mt-2 font-semibold text-white text-sm">{mainUnit.criadoEm}</p>
+                    </div>
                   </div>
                 </div>
 
                 {mainUnit.endereco && (
-                  <div className="mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                    <p className="text-sm text-gray-600 mb-2">Endereço completo</p>
-                    <p className="text-gray-900">
-                      {mainUnit.endereco}, {mainUnit.numero}
-                      {mainUnit.complemento && ` - ${mainUnit.complemento}`}
-                      <br />
-                      {mainUnit.bairro} - {mainUnit.cidade}, {mainUnit.estado}
+                  <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-white/10 p-4 text-white/80">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">Endereço</p>
+                    <p className="mt-2 text-sm font-semibold text-white">
+                      {mainUnit.endereco}, {mainUnit.numero}{mainUnit.complemento ? `, ${mainUnit.complemento}` : ''}
                     </p>
+                    <p className="mt-1 text-xs text-white/70">{mainUnit.bairro} · {mainUnit.cidade} · {mainUnit.estado}</p>
                   </div>
                 )}
               </div>
@@ -213,11 +204,14 @@ const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                       Nome da loja
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Unidade principal?
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      CNPJ
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      CNPJ
+                      Funcionários
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Criada em
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                       Ações
@@ -233,10 +227,13 @@ const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {unit.unidadePrincipal ? 'Sim' : 'Não'}
+                        {unit.cnpj || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {unit.cnpj || '-'}
+                        {employeesByStore[unit.nomeUnidade] ?? 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {unit.criadoEm}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="relative" ref={openMenuId === unit.id ? menuRef : null}>
@@ -260,7 +257,7 @@ const BusinessUnits: React.FC<BusinessUnitsProps> = ({ businessUnits, onNavigate
                                 Editar
                               </button>
                               <button
-                                onClick={() => handleDelete(unit.id)}
+                                onClick={() => handleDelete(unit.id, unit.nomeUnidade)}
                                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 rounded-b-lg"
                               >
                                 <Trash2 size={16} />

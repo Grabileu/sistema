@@ -163,9 +163,9 @@ const Shifts: React.FC<ShiftsProps> = ({ onNavigate }) => {
                   <AlertTriangle size={20} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Exclusao bloqueada</h2>
+                  <h2 className="text-lg font-semibold text-gray-900">Exclusão bloqueada</h2>
                   <p className="text-sm text-gray-600">
-                    Nao foi possivel excluir o turno "{blockedShiftDelete.turnoNome}" porque ha funcionario(s) vinculado(s).
+                    Não foi possível excluir o turno "{blockedShiftDelete.turnoNome}" porque há funcionário(s) vinculado(s).
                   </p>
                 </div>
               </div>

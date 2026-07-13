@@ -323,7 +323,9 @@ const Usuarios: React.FC<UsuariosProps> = ({ mode, loggedUser, setLoggedUser }) 
                 <th className="px-4 py-3 text-left font-semibold">Usuário</th>
                 <th className="px-4 py-3 text-left font-semibold hidden md:table-cell">E-mail</th>
                 <th className="px-4 py-3 text-left font-semibold">Perfil</th>
-                <th className="px-4 py-3 text-center font-semibold">Status</th>
+                {mode !== 'administradores' && (
+                  <th className="px-4 py-3 text-center font-semibold">Status</th>
+                )}
                 <th className="px-4 py-3 text-right font-semibold">Ações</th>
               </tr>
             </thead>
@@ -348,21 +350,23 @@ const Usuarios: React.FC<UsuariosProps> = ({ mode, loggedUser, setLoggedUser }) 
                         {perfil.label}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <button
-                        onClick={() => handleToggleAtivo(user)}
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold transition ${
-                          user.ativo
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                        }`}
-                      >
-                        {user.ativo
-                          ? <><CheckCircle2 size={12} /> Ativo</>
-                          : <><XCircle size={12} /> Inativo</>
-                        }
-                      </button>
-                    </td>
+                    {mode !== 'administradores' && (
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => handleToggleAtivo(user)}
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold transition ${
+                            user.ativo
+                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                              : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                          }`}
+                        >
+                          {user.ativo
+                            ? <><CheckCircle2 size={12} /> Ativo</>
+                            : <><XCircle size={12} /> Inativo</>
+                          }
+                        </button>
+                      </td>
+                    )}
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
                         <button

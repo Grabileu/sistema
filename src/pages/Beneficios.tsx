@@ -10,7 +10,6 @@ interface BeneficiosProps {
   onAddBeneficio: (b: Beneficio) => void
   onUpdateBeneficio: (b: Beneficio) => void
   onDeleteBeneficio: (id: string) => void
-  onToggleBeneficio: (id: string) => void
 }
 
 interface BeneficioFormState {
@@ -474,9 +473,6 @@ const Beneficios: React.FC<BeneficiosProps> = ({
       .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
   }, [beneficios, filtroCategoria, filtroIncidencia, searchQuery])
 
-  const totalAtivos = beneficios.filter((item) => item.ativo).length
-  const totalVigentesHoje = beneficios.filter((item) => isVigenteHoje(item)).length
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="border-b bg-white">
@@ -498,26 +494,6 @@ const Beneficios: React.FC<BeneficiosProps> = ({
       </div>
 
       <div className="container mx-auto px-6 py-6">
-        {beneficios.length > 0 && (
-          <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
-              <p className="mb-1 text-xs text-gray-500">Total cadastrado</p>
-              <p className="text-2xl font-bold text-gray-900">{beneficios.length}</p>
-            </div>
-            <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
-              <p className="mb-1 text-xs text-gray-500">Ativos</p>
-              <p className="text-2xl font-bold text-emerald-600">{totalAtivos}</p>
-            </div>
-            <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
-              <p className="mb-1 text-xs text-gray-500">Vigentes hoje</p>
-              <p className="text-2xl font-bold text-blue-600">{totalVigentesHoje}</p>
-            </div>
-            <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
-              <p className="mb-1 text-xs text-gray-500">Categorias usadas</p>
-              <p className="text-2xl font-bold text-indigo-600">{new Set(beneficios.map((item) => item.categoria)).size}</p>
-            </div>
-          </div>
-        )}
 
         <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg bg-white px-4 py-3 shadow">
           <div className="relative min-w-[220px] flex-1">
@@ -593,10 +569,6 @@ const Beneficios: React.FC<BeneficiosProps> = ({
             </div>
           ) : (
             <>
-              <div className="border-b bg-gray-50 px-4 py-2 text-right text-xs text-gray-500">
-                {filtered.length} de {beneficios.length} benefício{beneficios.length !== 1 ? 's' : ''}
-              </div>
-
               <table className="w-full">
                 <thead className="border-b bg-gray-50">
                   <tr>
@@ -604,7 +576,6 @@ const Beneficios: React.FC<BeneficiosProps> = ({
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">Regra</th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">Vigência</th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">Elegibilidade</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">Ações</th>
                   </tr>
                 </thead>
@@ -650,20 +621,6 @@ const Beneficios: React.FC<BeneficiosProps> = ({
                               {beneficio.elegibilidadeValores.length > 2 ? ` +${beneficio.elegibilidadeValores.length - 2}` : ''}
                             </p>
                           )}
-                        </td>
-
-                        <td className="px-6 py-4">
-                          <button
-                            onClick={() => onToggleBeneficio(beneficio.id)}
-                            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                              beneficio.ativo
-                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                            }`}
-                          >
-                            <span className={`h-1.5 w-1.5 rounded-full ${beneficio.ativo ? 'bg-green-500' : 'bg-gray-400'}`} />
-                            {beneficio.ativo ? 'Ativo' : 'Inativo'}
-                          </button>
                         </td>
 
                         <td className="px-6 py-4">

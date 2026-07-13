@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Baby, Ban, Briefcase, CakeSlice, CalendarDays, Clock3, Coffee, Palmtree, Search as SearchIcon, Stethoscope, UserMinus, UserPlus, UserX } from 'lucide-react';
 import DatePicker from './DatePicker';
+import Select from './Select';
 
 export interface HistoryEntry {
   id: string;
@@ -242,19 +243,22 @@ const HistoryList: React.FC<HistoryListProps> = ({ entries, onClearHistory }) =>
           </div>
           <div>
             <label className="text-xs text-gray-500">Tipo de registro</label>
-            <select
-              value={tipo}
-              onChange={(e) => setTipo(e.target.value)}
-              className="mt-1 h-10 w-full rounded-md border border-gray-200 bg-gray-100 px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-100"
-            >
-              <option value="">Todos</option>
-              <option value="falta">Falta</option>
-              <option value="atraso">Atraso</option>
-              <option value="licenca">Licença</option>
-              <option value="admissao">Admissão</option>
-              <option value="demissao">Demissão</option>
-              <option value="outro">Outro</option>
-            </select>
+            <div className="mt-1">
+              <Select
+                value={tipo}
+                onChange={(value) => setTipo(String(value))}
+                options={[
+                  { label: 'Todos', value: '' },
+                  { label: 'Falta', value: 'falta' },
+                  { label: 'Atraso', value: 'atraso' },
+                  { label: 'Licença', value: 'licenca' },
+                  { label: 'Admissão', value: 'admissao' },
+                  { label: 'Demissão', value: 'demissao' },
+                  { label: 'Outro', value: 'outro' },
+                ]}
+                buttonClassName="h-10"
+              />
+            </div>
           </div>
           <div>
             <label className="text-xs text-gray-500">Data início (registro)</label>

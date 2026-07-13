@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { Search, MoreVertical, Edit2, Trash2 } from 'lucide-react'
 import { Employee } from '../App'
 import Select from '../components/Select'
@@ -25,7 +25,9 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
     const [openMenuId, setOpenMenuId] = useState<string | null>(null)
     const [isActionMenuUpward, setIsActionMenuUpward] = useState(false)
     const [headerSearchTerm, setHeaderSearchTerm] = useState<string>(() => localStorage.getItem('employeeSearchTerm') || '')
-  const [pendingDelete, setPendingDelete] = useState<{ id: string; nome: string } | null>(null)
+    const [sortField, setSortField] = useState<'nomeCompleto' | 'equipe' | 'turno' | 'departamento' | null>(null)
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+    const [pendingDelete, setPendingDelete] = useState<{ id: string; nome: string } | null>(null)
     const menuRef = useRef<HTMLDivElement>(null)
 
     const resolveActionMenuDirection = (button: HTMLButtonElement) => {
@@ -272,10 +274,34 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
       return true;
     });
 
-    const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / employeesPerPage))
+    const sortedEmployees = useMemo(() => {
+      if (!sortField) {
+        return filteredEmployees
+      }
+
+      const sorted = [...filteredEmployees].sort((a, b) => {
+        const getValue = (employee: Employee) => {
+          if (sortField === 'departamento') {
+            return getDepartmentName(employee.equipe).toLowerCase()
+          }
+          return String(employee[sortField] || '').toLowerCase()
+        }
+
+        const valueA = getValue(a)
+        const valueB = getValue(b)
+
+        if (valueA < valueB) return sortDirection === 'asc' ? -1 : 1
+        if (valueA > valueB) return sortDirection === 'asc' ? 1 : -1
+        return 0
+      })
+
+      return sorted
+    }, [filteredEmployees, sortField, sortDirection, departments])
+
+    const totalPages = Math.max(1, Math.ceil(sortedEmployees.length / employeesPerPage))
     const startIndex = (currentPage - 1) * employeesPerPage
-    const endIndex = Math.min(startIndex + employeesPerPage, filteredEmployees.length)
-    const paginatedEmployees = filteredEmployees.slice(startIndex, startIndex + employeesPerPage)
+    const endIndex = Math.min(startIndex + employeesPerPage, sortedEmployees.length)
+    const paginatedEmployees = sortedEmployees.slice(startIndex, startIndex + employeesPerPage)
 
   useEffect(() => {
     setCurrentPage((prevPage) => Math.min(prevPage, totalPages))
@@ -292,15 +318,31 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
     setOpenMenuId(null)
   }
 
-  const confirmDelete = () => {
-    if (!pendingDelete) return
-    onDeleteEmployee?.(pendingDelete.id)
-    setPendingDelete(null)
-  }
+    const toggleSort = (field: 'nomeCompleto' | 'equipe' | 'turno' | 'departamento') => {
+      if (sortField !== field) {
+        setSortField(field)
+        setSortDirection('asc')
+        return
+      }
 
-  const cancelDelete = () => {
-    setPendingDelete(null)
-  }
+      if (sortDirection === 'asc') {
+        setSortDirection('desc')
+        return
+      }
+
+      setSortField(null)
+      setSortDirection('asc')
+    }
+
+    const confirmDelete = () => {
+      if (!pendingDelete) return
+      onDeleteEmployee?.(pendingDelete.id)
+      setPendingDelete(null)
+    }
+
+    const cancelDelete = () => {
+      setPendingDelete(null)
+    }
 
   const handleEdit = (id: string) => {
     onEditEmployee?.(id)
@@ -573,12 +615,32 @@ const ActiveEmployees: React.FC<ActiveEmployeesProps> = ({
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="text-left text-gray-500 border-b">
-                  <th className="py-3">Funcionário</th>
+                  <th className="py-3">
+                    <button type="button" onClick={() => toggleSort('nomeCompleto')} className="inline-flex items-center gap-1 text-left text-gray-600 hover:text-gray-900">
+                      Funcionário
+                      {sortField === 'nomeCompleto' && <span className="text-xs">{sortDirection === 'asc' ? '▲' : '▼'}</span>}
+                    </button>
+                  </th>
                   <th className="py-3">CPF</th>
                   <th className="py-3">E-mail</th>
-                  <th className="py-3">Equipe</th>
-                  <th className="py-3">Turno</th>
-                  <th className="py-3">Departamento</th>
+                  <th className="py-3">
+                    <button type="button" onClick={() => toggleSort('equipe')} className="inline-flex items-center gap-1 text-left text-gray-600 hover:text-gray-900">
+                      Equipe
+                      {sortField === 'equipe' && <span className="text-xs">{sortDirection === 'asc' ? '▲' : '▼'}</span>}
+                    </button>
+                  </th>
+                  <th className="py-3">
+                    <button type="button" onClick={() => toggleSort('turno')} className="inline-flex items-center gap-1 text-left text-gray-600 hover:text-gray-900">
+                      Turno
+                      {sortField === 'turno' && <span className="text-xs">{sortDirection === 'asc' ? '▲' : '▼'}</span>}
+                    </button>
+                  </th>
+                  <th className="py-3">
+                    <button type="button" onClick={() => toggleSort('departamento')} className="inline-flex items-center gap-1 text-left text-gray-600 hover:text-gray-900">
+                      Departamento
+                      {sortField === 'departamento' && <span className="text-xs">{sortDirection === 'asc' ? '▲' : '▼'}</span>}
+                    </button>
+                  </th>
                   <th className="py-3 text-right">Ações</th>
                 </tr>
               </thead>
