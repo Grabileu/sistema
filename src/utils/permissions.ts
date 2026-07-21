@@ -13,6 +13,7 @@ export type PermissionKey =
   | 'equipes'
   | 'turnos'
   | 'espelho_ponto'
+  | 'planilha_horario'
   | 'historico_ponto'
   | 'folha_pagamento'
   | 'regras_ponto'
@@ -48,6 +49,7 @@ export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   equipes: 'Equipes',
   turnos: 'Turnos',
   espelho_ponto: 'Espelho de ponto',
+  planilha_horario: 'Planilha horário',
   historico_ponto: 'Historico de ponto',
   folha_pagamento: 'Folha de pagamento',
   regras_ponto: 'Regras do ponto',
@@ -82,7 +84,7 @@ export const PERMISSION_GROUPS: Array<{ title: string; keys: PermissionKey[] }> 
   },
   {
     title: 'Controle de Jornada',
-    keys: ['espelho_ponto', 'historico_ponto', 'folha_pagamento', 'regras_ponto'],
+    keys: ['planilha_horario', 'espelho_ponto', 'historico_ponto', 'folha_pagamento', 'regras_ponto'],
   },
   {
     title: 'Lancamentos Operacionais',
@@ -114,6 +116,7 @@ export const DEFAULT_PROFILE_PERMISSIONS: ProfilePermissions = {
     equipes: true,
     turnos: true,
     espelho_ponto: true,
+    planilha_horario: true,
     historico_ponto: true,
     folha_pagamento: true,
     regras_ponto: true,
@@ -147,6 +150,7 @@ export const DEFAULT_PROFILE_PERMISSIONS: ProfilePermissions = {
     equipes: true,
     turnos: true,
     espelho_ponto: true,
+    planilha_horario: true,
     historico_ponto: true,
     folha_pagamento: true,
     regras_ponto: true,
@@ -180,6 +184,7 @@ export const DEFAULT_PROFILE_PERMISSIONS: ProfilePermissions = {
     equipes: true,
     turnos: false,
     espelho_ponto: false,
+    planilha_horario: false,
     historico_ponto: false,
     folha_pagamento: false,
     regras_ponto: false,
@@ -213,6 +218,7 @@ export const DEFAULT_PROFILE_PERMISSIONS: ProfilePermissions = {
     equipes: false,
     turnos: false,
     espelho_ponto: false,
+    planilha_horario: false,
     historico_ponto: false,
     folha_pagamento: false,
     regras_ponto: false,
@@ -306,6 +312,7 @@ export function getRoutePermissionKey(page: string): PermissionKey | null {
 
     turnos: 'turnos',
     'espelho-de-ponto': 'espelho_ponto',
+    'planilha-horario': 'planilha_horario',
     'historico-de-ponto': 'historico_ponto',
     'folha-de-pagamento': 'folha_pagamento',
     'regras-do-ponto': 'regras_ponto',

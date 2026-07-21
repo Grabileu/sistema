@@ -100,6 +100,7 @@ import Login from './pages/Login';
 import Usuarios from './pages/Usuarios';
 import Administradores from './pages/Administradores';
 import PermissoesPerfis from './pages/PermissoesPerfis';
+import PlanilhaHorario from './pages/PlanilhaHorario';
 import { ProfilePermissions, loadProfilePermissions, saveProfilePermissions, canAccessPage, getFirstAllowedPage } from './utils/permissions';
 
 export interface SindicatoData {
@@ -935,6 +936,10 @@ function App() {
     }
     if (route === 'Ceasa' || route === 'ceasa') {
       setCurrentPage('ceasa')
+      return
+    }
+    if (route === 'Planilha horário' || route === 'planilha-horario') {
+      setCurrentPage('planilha-horario')
       return
     }
     if (route === 'ceasa-cadastro-fornecedor') {
@@ -1862,6 +1867,9 @@ function App() {
             onNavigate={handleNavigate}
             onDeleteFalta={handleDeleteFalta}
           />
+        )}
+        {currentPage === 'planilha-horario' && (
+          <PlanilhaHorario onNavigate={handleNavigate} employees={employees} />
         )}
         {currentPage === 'adicionar-falta' && (
           <AdicionarFalta

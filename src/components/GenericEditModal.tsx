@@ -10,6 +10,7 @@ interface GenericEditModalProps {
   submitButtonText?: string
   cancelButtonText?: string
   isLoading?: boolean
+  closeOnOverlayClick?: boolean
 }
 
 /**
@@ -26,6 +27,7 @@ const GenericEditModal: React.FC<GenericEditModalProps> = ({
   submitButtonText = 'Salvar',
   cancelButtonText = 'Cancelar',
   isLoading = false,
+  closeOnOverlayClick = false,
 }) => {
   // Bloquear scroll quando modal está aberto
   useEffect(() => {
@@ -55,7 +57,7 @@ const GenericEditModal: React.FC<GenericEditModalProps> = ({
   return (
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30"
-      onClick={onClose}
+      onClick={closeOnOverlayClick ? onClose : undefined}
       role="presentation"
     >
       <div 

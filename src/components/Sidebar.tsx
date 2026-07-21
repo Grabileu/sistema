@@ -67,6 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate, canAcces
     Atrasos: 'atrasos',
     'Quebra de caixa': 'quebra-de-caixa',
     Ceasa: 'ceasa',
+    'Planilha horário': 'planilha-horario',
     'Espelho de ponto': 'espelho-de-ponto',
     'Histórico de ponto': 'historico-de-ponto',
     'Folha de pagamento': 'folha-de-pagamento',
@@ -98,6 +99,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate, canAcces
     Atrasos: 'atrasos',
     'Quebra de caixa': 'quebra-de-caixa',
     Ceasa: 'ceasa',
+    'Planilha horário': 'planilha-horario',
     'Dados da empresa': 'Dados da empresa',
     Lojas: 'unidades-negocio',
     Cargos: 'cargos',
@@ -131,6 +133,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate, canAcces
       label: 'Controle de Jornada', 
       hasSubmenu: true,
       submenuItems: [
+        'Planilha horário',
         'Espelho de ponto',
         'Histórico de ponto',
         'Folha de pagamento',

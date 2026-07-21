@@ -1,7 +1,7 @@
 import React, { useRef } from 'react'
-import ReactDOM from 'react-dom'
-import { Search } from 'lucide-react'
+import { Search, MoreVertical } from 'lucide-react'
 import { formatCPF } from '../utils/formatters'
+import { useClickOutside } from '../hooks/useClickOutside'
 
 
 interface DismissedEmployeesProps {
@@ -19,10 +19,34 @@ const DismissedEmployees: React.FC<DismissedEmployeesProps> = ({ employees }) =>
   const dismissed = employees;
 
   const [openMenuId, setOpenMenuId] = React.useState<string | null>(null);
-  const [menuPosition, setMenuPosition] = React.useState<{top: number, left: number} | null>(null);
-  const [showConfirm, setShowConfirm] = React.useState<{id: string, nome: string} | null>(null);
+  const [isActionMenuUpward, setIsActionMenuUpward] = React.useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null)
+  
   const menuBtnRefs = useRef<{[key: string]: HTMLButtonElement | null}>({});
   const [cpfFilter, setCpfFilter] = React.useState('');
+
+  useClickOutside(menuRef, () => setOpenMenuId(null))
+
+  const resolveActionMenuDirection = (button: HTMLButtonElement) => {
+    const rect = button.getBoundingClientRect()
+    const estimatedMenuHeight = 120
+    const margin = 12
+    const spaceBelow = window.innerHeight - rect.bottom - margin
+    const spaceAbove = rect.top - margin
+    const wouldOverflowBottom = rect.bottom + estimatedMenuHeight + margin > window.innerHeight
+
+    setIsActionMenuUpward(wouldOverflowBottom && spaceAbove > spaceBelow)
+  }
+
+  const toggleActionMenu = (id: string, event: React.MouseEvent<HTMLButtonElement>) => {
+    if (openMenuId === id) {
+      setOpenMenuId(null)
+      return
+    }
+
+    resolveActionMenuDirection(event.currentTarget)
+    setOpenMenuId(id)
+  }
 
   // Função para readmitir funcionário
   const handleReadmit = (id: string) => {
@@ -150,26 +174,27 @@ const DismissedEmployees: React.FC<DismissedEmployeesProps> = ({ employees }) =>
                     <td className="py-4 text-sm text-gray-500">
                       {d.cpf || '-'}
                     </td>
-                    <td className="py-4 text-center">
-                      <button
-                        className="text-2xl text-gray-400 cursor-pointer p-2 hover:bg-gray-100 rounded"
-                        ref={el => menuBtnRefs.current[d.id] = el}
-                        onClick={e => {
-                          if (openMenuId === d.id) {
-                            setOpenMenuId(null);
-                            setMenuPosition(null);
-                          } else {
-                            setOpenMenuId(d.id);
-                            const rect = menuBtnRefs.current[d.id]?.getBoundingClientRect();
-                            if (rect) {
-                              setMenuPosition({
-                                top: rect.bottom + window.scrollY,
-                                left: rect.left + window.scrollX,
-                              });
-                            }
-                          }
-                        }}
-                      >&#8230;</button>
+                    <td className="py-4 text-right">
+                      <div className="relative inline-block" ref={openMenuId === d.id ? menuRef : null}>
+                        <button
+                          className="p-2 hover:bg-gray-100 rounded"
+                          ref={el => menuBtnRefs.current[d.id] = el}
+                          onClick={(event) => toggleActionMenu(d.id, event)}
+                          aria-expanded={openMenuId === d.id}
+                        >
+                          <MoreVertical size={16} className="text-gray-400" />
+                        </button>
+                        {openMenuId === d.id && (
+                          <div className={`absolute right-0 w-44 max-h-[min(16rem,calc(100vh-2rem))] overflow-y-auto overscroll-contain rounded-md border border-gray-200 bg-white py-1 shadow-xl ${isActionMenuUpward ? 'bottom-full mb-1' : 'top-full mt-1'}`} style={{ zIndex: 9999 }}>
+                            <button
+                              onClick={() => { handleReadmit(d.id); setOpenMenuId(null); }}
+                              className="w-full px-4 py-2 text-left text-sm text-indigo-700 hover:bg-gray-100 flex items-center gap-2"
+                            >
+                              Readmitir
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -177,6 +202,7 @@ const DismissedEmployees: React.FC<DismissedEmployeesProps> = ({ employees }) =>
             </table>
           </div>
         </div>
+        
       </div>
     </div>
   )
